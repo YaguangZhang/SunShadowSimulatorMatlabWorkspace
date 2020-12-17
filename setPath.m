@@ -1,4 +1,4 @@
-% SETPATH Set up the environment for the simulation.
+% SETPATH Add libraries for the simulation.
 %
 % Yaguang Zhang, Purdue, 11/24/2020
 
@@ -11,25 +11,25 @@ addpath(genpath(fullfile(pwd, 'libs')));
 % loaded functions as they are, even though R2019a works anyway.
 rmpath(fullfile(pwd, 'libs', 'lidar'));
 
-% The absolute path to the shared folder holding the data and code. Please
-% make sure it is correct for the machine to run this script.
+% The absolute path to the shared/synched folder holding the data and code.
+% Please make sure it is correct for the machine to run this script.
 %  - On (quite powerful) Windows Artsy:
 absHomePathWinArtsy = ['D:\One Drive - Purdue\OneDrive - purdue.edu', ...
-    '\INDOT\SunShadowSimulator'];
+    '\INDOT\20201124_ShadowOnRoad\'];
 %  - Local copy on the computer cluster at Purdue:
 absHomePathLinuxCoverage = ['/home/coverage', ...
-    '/SunShadowSimulator'];
+    '/INDOT_ShadowOnRoad'];
 %  - Local copy on the computer cluster at Purdue:
 absHomePathLinuxCoverageOnFrankie = ['/home/coverage/nvme/', ...
-    '/SunShadowSimulator'];
+    '/INDOT_ShadowOnRoad'];
 
 % Path to LiDAR data.
 absPathLidarWinArtsy = ['D:\One Drive - Purdue\OneDrive - purdue.edu', ...
-    '\OATS\CellCoverageMapper\Lidar'];
+    '\OATS\CellCoverageMapper'];
 absPathLidarLinuxCoverage = ['/home/coverage', ...
-    '/CellCoverageMapper/Lidar'];
+    '/CellCoverageMapper'];
 absPathLidarLinuxCoverageOnFrankie = ['/home/coverage/nvme/', ...
-    '/CellCoverageMapper/Lidar'];
+    '/CellCoverageMapper/'];
 
 % The absolute path to Python 3. Please make sure it is correct for the
 % machine to run this script.
@@ -96,5 +96,4 @@ catch err
     end
     error(errorMsg);
 end
-
 % EOF
