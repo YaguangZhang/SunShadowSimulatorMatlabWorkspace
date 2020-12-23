@@ -38,7 +38,7 @@ if (~exist('spaInput', 'var')) || (~isstruct(spaInput))
     % at
     %     https://midcdmz.nrel.gov/apps/spa.pl?syear=2020&smonth=1&sday=1&eyear=2020&emonth=1&eday=1&step=10&stepunit=1&otype=1&hr=12&min=0&sec=0&latitude=39.743&longitude=-105.178&timezone=-7.0&elev=1829&press=835&temp=10&dut1=0.0&deltat=64.797&azmrot=180&slope=0&refract=0.5667&field=0&field=1&field=3&field=4&field=6&field=7
     %
-    %- Observer local time.
+    %   - Observer local time.
     spaInput.year          = 2020;
     spaInput.month         = 1;
     spaInput.day           = 1;
@@ -47,8 +47,8 @@ if (~exist('spaInput', 'var')) || (~isstruct(spaInput))
     spaInput.second        = 0;
     spaInput.timezone      = -7;
     %   - Observer location.
-    spaInput.longitude     = -105.178;
     spaInput.latitude      = 39.743;
+    spaInput.longitude     = -105.178;
     spaInput.elevation     = 1829; % In meters.
 end
 
@@ -113,15 +113,23 @@ if flagDebug
         fprintf('Delta Psi:     %.6e degrees\n',spaOutput.del_psi);
         fprintf('Delta Epsilon: %.6e degrees\n',spaOutput.del_epsilon);
         fprintf('Epsilon:       %.6f degrees\n',spaOutput.epsilon);
+        % Topocentric zenith angle [degrees]. Note:
+        %     Zenith  = 90 degrees - elevation angle
         fprintf('Zenith:        %.6f degrees\n',spaOutput.zenith);
+        % Topocentric azimuth angle (eastward from north) [0 to 360
+        % degrees]. The angle formed by the projection of the direction of
+        % the sun on the horizontal plane.
         fprintf('Azimuth:       %.6f degrees\n',spaOutput.azimuth);
+        % Surface incidence angle [degrees].
         fprintf('Incidence:     %.6f degrees\n',spaOutput.incidence);
         
+        % Local sunrise time (+/- 30 seconds) [fractional hour].
         min = 60*(spaOutput.sunrise - floor(spaOutput.sunrise));
         sec = 60*(min - floor(min));
         fprintf('Sunrise:       %2.2d:%2.2d:%2.2d Local Time\n', ...
             floor(spaOutput.sunrise), floor(min), floor(sec));
         
+        % Local sunset time (+/- 30 seconds) [fractional hour].
         min = 60*(spaOutput.sunset - floor(spaOutput.sunset));
         sec = 60*(min - floor(min));
         fprintf('Sunset:        %2.2d:%2.2d:%2.2d Local Time\n', ...

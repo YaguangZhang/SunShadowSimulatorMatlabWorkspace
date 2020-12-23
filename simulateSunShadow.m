@@ -1,11 +1,15 @@
 %SIMULATESUNSHADOW Find sun shadow based for the location and time of
 %interest.
 %
-% Given a location of interest P, we will use the terrain elevation to
-% determine the ground level, and build a LiDAR profile for P towards the
-% sun's direction according to the time of interest. That LiDAR profile is
-% compared with the direct path from P to the sun to determine whether the
-% ground at P is in the sun shadow or not.
+% Given a location of interest P (together with the time of interest), we
+% will build a LiDAR profile from P towards the sun's direction (for
+% obstacles that may block the sun for P). Then, that LiDAR profile is
+% compared with the direct path from P to the sun to determine whether P is
+% in the sun or not.
+%
+% The simulation settings and outputs are saved in struct variables
+% simConfigs and simState, respectively. Please refer to the comments in
+% this file for more details.
 %
 % Yaguang Zhang, Purdue, 11/24/2020
 
@@ -17,11 +21,14 @@ curFileName = mfilename;
 
 prepareSimulationEnv;
 
-% Change PRESET to run the simulator for different areas.
+% Change PRESET to run the simulator for different locations/areas of
+% interest.
+%   - 'GpsPts'
+%     Manually specified GPS locations.
 %   - 'MSEE'
 %     Area around Purdue MSEE building with manually labeled square
 %     boundary.
-SUPPORTED_PRESETS = {'MSEE'};
+SUPPORTED_PRESETS = {'GpsPts', 'MSEE'};
 PRESET = 'MSEE';
 
 assert(any(strcmp(SUPPORTED_PRESETS, PRESET)), ...
@@ -30,16 +37,13 @@ assert(any(strcmp(SUPPORTED_PRESETS, PRESET)), ...
 %% Script Parameters
 
 % The absolute path to the Lidar .las file. Currently supporting
-% 'Tipp_Extended' (for ten counties in the WHIN are), 'IN' (all indiana)
+% 'Tipp_Extended' (for ten counties in the WHIN are), 'IN' (all Indiana)
 % and '' (automatically pick the biggest processed set).
 LIDAR_DATA_SET_TO_USE = '';
 
-% The absolute path to save results.
-switch PRESET
-    case 'MSEE'
-        pathToSaveResults = fullfile(ABS_PATH_TO_SHARED_FOLDER, ...
-            'SunShadowSimulatorResults', 'Simulation_MSEE');
-end
+% The absolute path to the folder for saving the results.
+folderToSaveResults = fullfile(ABS_PATH_TO_SHARED_FOLDER, ...
+    'SunShadowSimulatorResults', ['Simulation_', PRESET]);
 
 %% Simulation Configurations
 
@@ -52,26 +56,32 @@ simConfigs.CURRENT_SIMULATION_TAG = PRESET;
 
 %   - The UTM (x, y) polygon boundary vertices representing the area of
 %   interest for generating the coverage maps; note that it is possible to
-%   use the region covered by the availabe LiDAR data set as the
+%   use the region covered by the available LiDAR data set as the
 %   corresponding area of interest.
 switch PRESET
+    case 'GpsPts'
+        simConfigs.LAT_LON_PTS_OF_INTEREST ...
+            = [ ...
+            ... % A point at southwest of the Purdue engineering fountain.
+            40.428570, -86.913906];
     case 'MSEE'
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
-            [40.427515, -86.915579; ...
-            40.431287, -86.909588]);
+            [40.428530, -86.913961; ...
+            40.429744, -86.912143]);
+        %   - We will use this spacial resolution to construct the
+        %   inspection location grid for the area of interest.
+        simConfigs.GRID_RESOLUTION_IN_M = 1;
 end
 
-%   - The zone label to use in the UTM (x, y) system.
+%   - The zone label to use in the UTM (x, y) system. Note: this will be
+%   used for preprocessing the LiDAR data, too; so if it changes, the
+%   history LiDAR data will become invalid.
 simConfigs.UTM_ZONE = '16 T';
 
-%   - We will use this spacial resolution to construct the inspection
-%   location grid for the area of interest.
-simConfigs.GRID_RESOLUTION_IN_M = 0.5;
-
-%   - The guaranteed spacial resolution for LiDAR profiles; a larger value
+%   - The guaranteed spatial resolution for LiDAR profiles; a larger value
 %   will decrease the simulation time and the simulation accuracy (e.g.,
-%   small obstacles may get ingored).
+%   small obstacles may get ignored).
 simConfigs.MAX_ALLOWED_LIDAR_PROFILE_RESOLUATION_IN_M = 1.5;
 
 %   - The guaranteed minimum number of LiDAR z (or possibly elevation)
@@ -96,18 +106,40 @@ simConfigs.RX_HEIGHT_TO_INSPECT_IN_M = 0.1;
 %   may still block the location of interest).
 simConfigs.RADIUS_TO_INSPECT_IN_M = 1000;
 
-%   - For adjusting the feedback frequency in parfor workers.
-simConfigs.WORKER_MIN_PROGRESS_RATIO_TO_REPORT = 0.2;
+%   - For adjusting the feedback frequency.
+simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.2;
 
-%   - The time range of interest to inspect. This is specified in terms of
-%   the local time in the UTM zone specified above. The times to inspect
-%   are essentially constructed via something like:
+%   - The time range of interest to inspect.
+%     The datetime for this is specified in terms of the local time without
+%     a time zone. The time zone will be derived from simConfigs.UTM_ZONE.
+%     The times to inspect are essentially constructed via something like:
 %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
-inspectTimeStart = datetime('1-Dec-2020 00:00:00');
-inspectTimeEnd = datetime('7-Dec-2020 23:59:59');
-inspectTimeIntervalInM = 60; % In minutes.
+simConfigs.LOCAL_TIME_START = datetime('1-Dec-2020 00:00:00');
+simConfigs.LOCAL_TIME_END = datetime('7-Dec-2020 23:59:59');
+simConfigs.TIME_INTERVAL_IN_M = 60; % In minutes.
 
-%% Configure the Simulation Accordingly
+%% Derive Other Configurations Accordingly
+
+disp(' ')
+disp(['    [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Configuring the simulation for PRESET ', PRESET, ' ...'])
+
+% Save simConfigs if it is not yet done.
+dirToSaveSimConfigs = fullfile(folderToSaveResults, 'simConfigs.mat');
+if exist(dirToSaveSimConfigs, 'file')
+    disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+        '] The specified PRESET "', ...
+        PRESET, '" has been processed before.'])
+    disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+        '] Loading history simConfigs ...'])
+    histSimConfigs = load(dirToSaveSimConfigs);
+    if ~isequaln(histSimConfigs.simConfigs, simConfigs)
+        error(['[        ', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+            '] The settings for this PRESET have changed!']);
+    end
+else
+    save(dirToSaveSimConfigs, 'simConfigs');
+end
 
 % Pre-assign LIDAR_DATA_SET_TO_USE based on the user's settings. We will
 % verify this value later.
@@ -132,17 +164,78 @@ simConfigs.utm2deg_speZone = utm2deg_speZone;
 [~, zoneCenterLon] = simConfigs.utm2deg_speZone(500000,0);
 simConfigs.timezone = -timezone(zoneCenterLon);
 
+% The local datetimes to inspect.
+simConfigs.localDatetimesToInspect = simConfigs.LOCAL_TIME_START ...
+    :minutes(simConfigs.TIME_INTERVAL_IN_M) ...
+    :simConfigs.LOCAL_TIME_END;
+
+% The locations of interest to inspect.
+flagGpsPtsOfInterestSpecified ...
+    = isfield(simConfigs, 'LAT_LON_PTS_OF_INTEREST');
+flagAreaOfInterestSpecified ...
+    = isfield(simConfigs, 'UTM_X_Y_BOUNDARY_OF_INTEREST');
+% Only one way of specifying the locations to inspect is expected to be
+% used.
+if sum([flagGpsPtsOfInterestSpecified; flagAreaOfInterestSpecified])~=1
+    error('Not able to consctruct the locations of interest!');
+end
+
+if flagGpsPtsOfInterestSpecified
+    % If the GPS locations to inspect are set, we will use them directly.
+    simConfigs.gridLatLonPts = simConfigs.LAT_LON_PTS_OF_INTEREST;
+    
+    [gridXs,gridYs] = simConfigs.deg2utm_speZone( ...
+        simConfigs.gridLatLonPts(:,1), simConfigs.gridLatLonPts(:, 2));
+    simConfigs.gridXYPts = [gridXs,gridYs];
+elseif flagAreaOfInterestSpecified
+    % If the area of interest is set, we will generate a grid to inspect
+    % accordingly.
+    gridMinX = min(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1));
+    gridMaxX = max(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1));
+    gridMinY = min(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
+    gridMaxY = max(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
+    
+    gridResolutionInM = simConfigs.GRID_RESOLUTION_IN_M;
+    
+    gridXLabels = constructAxisGrid( ...
+        mean([gridMaxX, gridMinX]), ...
+        floor((gridMaxX-gridMinX)./gridResolutionInM), gridResolutionInM);
+    gridYLabels = constructAxisGrid( ...
+        mean([gridMaxY, gridMinY]), ...
+        floor((gridMaxY-gridMinY)./gridResolutionInM), gridResolutionInM);
+    [gridXs,gridYs] = meshgrid(gridXLabels,gridYLabels);
+    
+    % Discard grid points out of the area of interest.
+    boolsGridPtsToKeep = inpolygon(gridXs(:), gridYs(:), ...
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1), ...
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
+    
+    simConfigs.gridXYPts = [gridXs(boolsGridPtsToKeep), ...
+        gridYs(boolsGridPtsToKeep)];
+    
+    % Convert UTM (x, y) to (lat, lon).
+    [gridLats, gridLons] = simConfigs.utm2deg_speZone( ...
+        simConfigs.gridXYPts(:,1), simConfigs.gridXYPts(:,2));
+    simConfigs.gridLatLonPts = [gridLats, gridLons];
+end
+
 % Turn the diary logging function on.
-dirToSaveDiary = fullfile(pathToSaveResults, 'diary.txt');
+dirToSaveDiary = fullfile(folderToSaveResults, 'diary.txt');
 if ~exist(dirToSaveDiary, 'file')
-    if ~exist(pathToSaveResults, 'dir')
-        mkdir(pathToSaveResults)
+    if ~exist(folderToSaveResults, 'dir')
+        mkdir(folderToSaveResults)
     end
     fclose(fopen(dirToSaveDiary, 'w'));
 end
 diary(dirToSaveDiary);
 
+disp(['    [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), '] Done!'])
+
 %% Preprocessing LiDAR Data
+% Note: the first time of this may take a long time, depending on the size
+% of the LiDAR data set, but (1) it supports recovery from interruptions,
+% and (2) once we have gone through all the data once, loading the
+% information would be very fast.
 
 % Make sure the chosen LiDAR dataset to use in the simulation is indeed
 % available, and if it is not specified (LIDAR_DATA_SET_TO_USE = ''),
@@ -166,10 +259,253 @@ lidarFileAbsDirs = cellfun(@(d) ...
     [dirToLidarFiles, strrep(d, '\', filesep)], ...
     lidarFileRelDirs, 'UniformOutput', false);
 
+% Extra information on the LiDAR data set.
+%   - The overall boundry for the area covered by the LiDAR data set in
+%   UTM.
+lidarFilesXYCoveragePolyshape ...
+    = mergePolygonsForAreaOfInterest(lidarFileXYCoveragePolyshapes, 1);
+%   - Centroids for the LiDAR files in UTM.
+lidarFileXYCentroids ...
+    = extractCentroidsFrom2DPolyCell(lidarFileXYCoveragePolyshapes);
+%   - The .mat copies for the LiDAR data.
+lidarMatFileAbsDirs = cellfun(@(d) regexprep(d, '\.img$', '.mat'), ...
+    lidarFileAbsDirs, 'UniformOutput', false);
+
 %% Simulation
 
 disp(' ')
-disp('    Conducting simulation ...')
-disp(' ')
+disp(['    [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Conducting simulation ...'])
 
+% The location for saving history results of simState, just in case any
+% interruption happens.
+dirToSaveSimState = fullfile(folderToSaveResults, 'simState.mat');
+if exist(dirToSaveSimState, 'file')
+    disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+        '] The specified PRESET "', ...
+        PRESET, '" has been processed before.'])
+    disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+        '] Loading history simState ...'])
+    load(dirToSaveSimState);
+    disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+        '] Done!'])
+else
+    disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+        '] Initializing simState ...'])
+    % Load history results if they are available. This is for recovery from
+    % interruptions. We will save all simulation output in a struct
+    % variable simState.
+    %   - The number of grid locations to inspect.
+    simState.numOfGridPts = size(simConfigs.gridLatLonPts, 1);
+    %   - The number of times to inspect.
+    simState.numOfTimesToInspect ...
+        = length(simConfigs.localDatetimesToInspect);
+    
+    %   - The integer labels for local days to inspect.
+    %     During each local day, we do not need simulations during the
+    %     night (before the sunrise and after the sunset). For this, we
+    %     need to find the times to inspect that are in the same days. Note
+    %     that we do not need time zone compensation here.
+    simState.dayLabels = findgroups( ...
+        localDatetime2UtmUnixTimeInS( ...
+        dateshift(simConfigs.localDatetimesToInspect, 'Start', 'day'), 0));
+    %   - The integer labels for local days to inspect.
+    simState.numOfDays = max(simState.dayLabels);
+    
+    % Preassign storage for the simulation outputs. The sunrise and sunset
+    % time for all grid locations will be stored as columns of cell
+    % matrices, with each column being the results for one day. Note: for
+    % convenience, we will convert them from fractional hours (which is the
+    % output format of the SPA function) to datatime and store the results
+    % in simState.
+    [simState.sunriseDatetimes, simState.sunsetDatetimes] ...
+        = deal(cell([simState.numOfGridPts, simState.numOfDays]));
+    
+    % The sun position information and the resultant uniform sun power
+    % values are stored as columns of a huge matrix, corresponding to the
+    % grid locations, with each column being the results for one local
+    % datetime to inspect.
+    %   - Topocentric azimuth angle (eastward from north) [0 to 360
+    %   degrees].
+    %     The angle formed by the projection of the direction of the sun on
+    %     the horizontal plane.
+    %   - Topocentric zenith angle [degrees].
+    %     Note: Zenith  = 90 degrees - elevation angle
+    %   - Uniform sun powers
+    %     Ratios in [0,1], where 0 means in the shadow and 1 means direct
+    %     sunshine (at a zenith of 90 degrees).
+    [simState.sunAzis, simState.sunZens, simState.uniformSunPower] ...
+        = deal(nan([simState.numOfGridPts, simState.numOfTimesToInspect]));
+    
+    % Generate a history file.
+    save(dirToSaveSimState, 'simState');
+    disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+        '] Done!'])
+end
+
+disp(' ')
+disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Computing sun positions in the daytime ...'])
+% We will go through each day to inspect, each datetime to inspect in that
+% day, and each grid location to inspect.
+totalNumOfDays = simState.numOfDays;
+totalNumOfLocs = simState.numOfGridPts;
+% For avoiding unnecessary communications to parfor workers.
+localDatetimesToInspect = simConfigs.localDatetimesToInspect;
+tz = simConfigs.timezone;
+for idxDay = 1:totalNumOfDays
+    disp(['            [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+        '] Day ', num2str(idxDay), '/', num2str(totalNumOfDays), ' ...'])
+    % Find the indices for the datetimes to inspect in this day.
+    indicesTimesToInspect = find(simState.dayLabels==idxDay);
+    
+    % Process locations one by one.
+    numOfLocsProcessed = 0;
+    for idxLoc = 1:totalNumOfLocs
+        curXY = simConfigs.gridXYPts(idxLoc, :);
+        curLatLon = simConfigs.gridLatLonPts(idxLoc, :);
+        
+        % We will use the profile generation function to fetch the LiDAR z
+        % value and use that as the elevation for the point of interest.
+        % Essentially, it is a profile with only one location in it.
+        curSampLoc = generateTerrainProfileSampLocs(...
+            curXY, curXY, ...
+            simConfigs.MAX_ALLOWED_LIDAR_PROFILE_RESOLUATION_IN_M,...
+            1);
+        % Temporarily disable the warning.
+        warning('off', 'MATLAB:dispatcher:UnresolvedFunctionHandle');
+        [~, curEle, ~] ...
+            = generateProfileSamps( ...
+            curSampLoc, simConfigs.utm2deg_speZone, ...
+            lidarFileXYCentroids, lidarFileXYCoveragePolyshapes, ...
+            lidarMatFileAbsDirs, 'LiDAR');
+        % Reenable warning.
+        warning('on', 'MATLAB:dispatcher:UnresolvedFunctionHandle');
+        
+        % If this day has not been processed for this location before, we
+        % first get the sunrise and sunset times, and mark the times at
+        % night accordingly as "in shadow" for this location.
+        curIdxDatetime = indicesTimesToInspect(1);
+        if isnan(simState.sunAzis(idxLoc, curIdxDatetime))
+            % Simulate the first datetime to inspect for this day to get
+            % the information needed.
+            curDatetime = simConfigs.localDatetimesToInspect( ...
+                curIdxDatetime);
+            
+            curSpaIn = constructSpaStruct(simConfigs.timezone, ...
+                curDatetime, [curLatLon curEle]);
+            % Calculate zenith, azimuth, and sun rise/transit/set values:
+            % SPA_ZA_RTS = 2.
+            curSpaIn.function = 2;
+            [spaErrCode, curSpaOut] = getSolarPosition(curSpaIn);
+            assert(spaErrCode==0, ...
+                ['There was an error from SPA; error code: ', ...
+                num2str(spaErrCode), '!'])
+            
+            curSunriseFracHour = curSpaOut.sunrise;
+            curSunsetFracHour = curSpaOut.sunset;
+            
+            % Save the sunrise and sunset times. Note that in the time
+            % conversion here, we do not need to consider the local time
+            % zone (i.e., time zone zero is used).
+            curDate = dateshift(curDatetime, 'Start', 'day');
+            curSunriseDatetime = utmUnixTimeInS2LocalDatetime( ...
+                localDatetime2UtmUnixTimeInS(curDate, 0) ...
+                + curSunriseFracHour*60*60, 0);
+            curSunsetDatetime = utmUnixTimeInS2LocalDatetime( ...
+                localDatetime2UtmUnixTimeInS(curDate, 0) ...
+                + curSunsetFracHour*60*60, 0);
+            simState.sunriseDatetimes{idxLoc, idxDay} ...
+                = curSunriseDatetime;
+            simState.sunsetDatetimes{idxLoc, idxDay} ...
+                = curSunsetDatetime;
+            
+            % Set the sun power to zero for all times that are not in the
+            % daytime (bigger than the sunrise time and smaller than the
+            % sunset time).
+            curTimesToInspect = ...
+                simConfigs.localDatetimesToInspect(indicesTimesToInspect);
+            boolsInTheSun = (curTimesToInspect>curSunriseDatetime) ...
+                & (curTimesToInspect<curSunsetDatetime);
+            simState.uniformSunPower(idxLoc, ...
+                indicesTimesToInspect(~boolsInTheSun)) = 0;
+            
+            % Save the sun position information.
+            simState.sunAzis(idxLoc, curIdxDatetime) = curSpaOut.azimuth;
+            simState.sunZens(idxLoc, curIdxDatetime) = curSpaOut.zenith;
+        end
+        
+        % Loop through the rest of the times to inspect. In order to make
+        % parfor work, we will store the results directly in some temporary
+        % variables first.
+        sunAzis = simState.sunAzis;
+        sunZens = simState.sunZens;
+        uniformSunPower = simState.uniformSunPower;
+        parfor curIdxDatetime = indicesTimesToInspect(2:end)
+            % And find the solar position if nessary, that is (1) the sun
+            % aimuth has not been evaluated for this location and time, and
+            % (2) if this location is in the sun at this time (where
+            % uniformSunPower is not set to be 0 and remains NaN for now).
+            if isnan(sunAzis(idxLoc, curIdxDatetime)) ...
+                    && isnan(uniformSunPower( ...
+                    idxLoc, curIdxDatetime))
+                curDatetime = localDatetimesToInspect( ...
+                    curIdxDatetime);
+                curSpaIn = constructSpaStruct(tz, ...
+                    curDatetime, [curLatLon curEle]);
+                % Calculate only zenith and azimuth: SPA_ZA = 0;
+                curSpaIn.function = 0;
+                [spaErrCode, curSpaOut] = getSolarPosition(curSpaIn);
+                assert(spaErrCode==0, ...
+                    ['There was an error from SPA; error code: ', ...
+                    num2str(spaErrCode), '!'])
+                
+                % Save the sun position information.
+                sunAzis(idxLoc, curIdxDatetime) ...
+                    = curSpaOut.azimuth;
+                sunZens(idxLoc, curIdxDatetime) ...
+                    = curSpaOut.zenith;
+            end
+        end
+        simState.sunAzis = sunAzis;
+        simState.sunZens = sunZens;
+        
+        numOfLocsProcessed = numOfLocsProcessed+1;
+        % Report the progress regularly.
+        if numOfLocsProcessed/totalNumOfLocs ...
+                > simConfigs.MIN_PROGRESS_RATIO_TO_REPORT            
+            % Also take the chance to update the history results.
+            save(dirToSaveSimState, 'simState');
+            numOfLocsProcessed = 0;
+            
+            disp(['                [', ...
+                datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+                '] Location ', num2str(idxLoc), '/', ...
+                num2str(totalNumOfLocs), ' (', ...
+                num2str(idxLoc/totalNumOfLocs*100, '%.2f'), '%) ...'])
+        end
+    end
+end
+disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Done!'])
+
+disp(' ')
+disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Locating spots in the sun ...'])
+disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Done!'])
+
+disp(' ')
+disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Computing the uniform sun powers ...'])
+disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Done!'])
+
+disp(' ')
+disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Computing the sun energies ...'])
+disp(['        [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), ...
+    '] Done!'])
+
+disp(['    [', datestr(now, 'yyyy/mm/dd HH:MM:ss'), '] Done!'])
 % EOF
