@@ -713,7 +713,7 @@ curVideoWriter = VideoWriter( ...
 curVideoWriter.FrameRate = simConfigs.FRAME_RATE;
 open(curVideoWriter);
 
-drawnow;
+drawnow; pause(0.1);
 writeVideo(curVideoWriter, getframe(hFigShadowLoc));
 
 % Go through all remaining times.
@@ -728,10 +728,12 @@ for curIdxDatetime = 2:length(simConfigs.localDatetimesToInspect)
         [hFigShadowLoc, hShadowMapPoly] = ...
             plotSunShadowMap(matRxLonLatWithPathLoss, ...
             simConfigs, hFigShadowLoc);
-        title(datestr(lastDatetime, datetimeFormat));
+        title(datestr(curDatetime, datetimeFormat));
         
         lastDatetime = curDatetime;
     end
+    
+    drawnow;
     writeVideo(curVideoWriter, getframe(hFigShadowLoc));
 end
 close(curVideoWriter);
