@@ -10,7 +10,8 @@ function [sunPowers] = computeUniformSunPowerFromZenith(sunZens)
 %   - sunPowers
 %     The uniform sun power(s). It is a ratio in [0,1], corresponding to
 %     zenith angles from 90 degrees to 0 degree. Values in between are
-%     computed based on the area of a square sun beam on the ground.
+%     computed based on the area of a square sun beam on the ground. Note:
+%     for NaN elements in sunZens, NaN will be output.
 %
 % Yaguang Zhang, Purdue, 12/24/2020
 
