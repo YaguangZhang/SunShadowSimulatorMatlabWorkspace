@@ -5,7 +5,8 @@
 % will build a LiDAR profile from P towards the sun's direction (for
 % obstacles that may block the sun for P). Then, that LiDAR profile is
 % compared with the direct path from P to the sun to determine whether P is
-% in the sun or not.
+% in the sun or not. Note that the height of P is determined by the
+% specified LiDAR data set.
 %
 % The simulation settings and outputs are saved in struct variables
 % simConfigs and simState, respectively. Please refer to the comments in
@@ -22,17 +23,9 @@ curFileName = mfilename;
 prepareSimulationEnv;
 
 % Change PRESET to run the simulator for different locations/areas of
-% interest.
-%   - 'GpsPts'
-%     Manually specified GPS locations.
-%   - 'MSEE'
-%     Area around Purdue MSEE building with manually labeled square
-%     boundary.
-SUPPORTED_PRESETS = {'GpsPts', 'MSEE'};
-PRESET = 'MSEE';
-
-assert(any(strcmp(SUPPORTED_PRESETS, PRESET)), ...
-    ['Unsupported preset "', PRESET, '"!']);
+% interest. Please refer to the Simulation Configurations section for the
+% supported presets.
+PRESET = 'PurdueMseeBuilding';
 
 %% Script Parameters
 
@@ -67,17 +60,31 @@ switch PRESET
             = [ ...
             ... % A point at southwest of the Purdue engineering fountain.
             40.428570, -86.913906];
-    case 'MSEE'
-        % Just the fountain. One can change the second GPS point to
-        % [40.429744, -86.912143] to extend the area to cover the MSEE
-        % building.
+    case 'PurdueMseeBuilding'
+        %   - Just MSEE building.
+        %     [40.428951, -86.913309; 40.429744, -86.912143]
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
-            [40.428530, -86.913961; ...
-            40.428761, -86.913599]);
+            [40.428951, -86.913309; 40.429744, -86.912143]);
         %   - We will use this spacial resolution to construct the
         %   inspection location grid for the area of interest.
-        simConfigs.GRID_RESOLUTION_IN_M = 1;
+        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+    case 'PurdueEngFountain'
+        %   - Just the fountain.
+        %     [40.428530, -86.913961; 40.428761, -86.913599]
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRectanglePolyMat(...
+            [40.428530, -86.913961; 40.428761, -86.913599]);
+        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+    case 'PurdueMseeBuildingWithEngFountain'
+        %   - MSEE and the fountain
+        %     [40.428530, -86.913961; 40.429744, -86.912143]
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRectanglePolyMat(...
+            [40.428530, -86.913961; 40.429744, -86.912143]);
+        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+    otherwise
+        error(['Unsupported preset "', PRESET, '"!'])
 end
 
 %   - The zone label to use in the UTM (x, y) system. Note: this will be
@@ -90,19 +97,17 @@ simConfigs.UTM_ZONE = '16 T';
 %   small obstacles may get ignored).
 simConfigs.MAX_ALLOWED_LIDAR_PROFILE_RESOLUTION_IN_M = 1.5;
 
-%   - The guaranteed minimum number of LiDAR z (or possibly elevation)
-%   elements in one terrain profile; this will ensure non-empty terrain
-%   profiles.
-simConfigs.MIN_NUM_OF_TERRAIN_SAMPLES_PER_PROFILE = 10;
+%   - (TODO) The guaranteed minimum number of LiDAR z (or possibly
+%   elevation) elements in one terrain profile; this will ensure non-empty
+%   terrain profiles.
+% simConfigs.MIN_NUM_OF_TERRAIN_SAMPLES_PER_PROFILE = 10;
 
-%   - We will treat the sun as the TX and the location to inspect as the
-%   RX. Accordingly, one can adjust the RX height in the simulator to
-%   change the height of point to inspect (zero corresponds to the ground
-%   level defined by the terrain elevation data). This could be useful if
-%   one would like to do the simulation for something above the ground, or
-%   if the terrain elevation data do not agree well with the LiDAR data in
-%   terms of the ground elevation.
-simConfigs.RX_HEIGHT_TO_INSPECT_IN_M = 0.1;
+%   - (TODO) We will treat the sun as the TX and the location to inspect as
+%   the RX. Accordingly, one can adjust the RX height in the simulator to
+%   change the height of point to inspect (zero corresponds to the surface
+%   level defined by the LiDAR z data). This could be useful if one would
+%   like to do the simulation for something above the ground.
+% simConfigs.RX_HEIGHT_TO_INSPECT_IN_M = 0;
 
 %   - For each location of interest, only a limited distance of the LiDAR
 %   data will be inspected. Increase this parameter will increase the
@@ -110,7 +115,16 @@ simConfigs.RX_HEIGHT_TO_INSPECT_IN_M = 0.1;
 %   low, the accuracy of the simulation may decrease, too, especially for
 %   the case when the sun is at a low angle (then a low obstacle far away
 %   may still block the location of interest).
-simConfigs.RADIUS_TO_INSPECT_IN_M = 1000;
+%     Say the sunshine duration is 12 hours a day and the sun location is
+%     uniformly distributed in [0, 180] degrees, where 0 degree corresponds
+%     to sunrise and 180 degrees corresponds to sunset. Then if we would
+%     like to ignore 15 min of sunshine right after the sunrise and before
+%     the sunset, with a typical three-story building (~ 10 m high), we
+%     would need a radius to inspect of r meters, such that:
+%         arctand(10/r)*2/180 *12*60 = 15*2
+%     We can get r here is around 152 meters:
+%         r = 10/tand(15*2/60/12*180/2) = 152.5705
+simConfigs.RADIUS_TO_INSPECT_IN_M = 150;
 
 %   - For adjusting the feedback frequency.
 simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.05;
@@ -120,9 +134,9 @@ simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.05;
 %   will be derived from simConfigs.UTM_ZONE. The times to inspect are
 %   essentially constructed via something like:
 %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
-simConfigs.LOCAL_TIME_START = datetime('1-May-2021 00:00:00');
-simConfigs.LOCAL_TIME_END = datetime('2-May-2021 23:59:59');
-simConfigs.TIME_INTERVAL_IN_M = 60; % In minutes.
+simConfigs.LOCAL_TIME_START = datetime('1-Jan-2021 15:00:00');
+simConfigs.LOCAL_TIME_END = datetime('1-Jan-2021 19:59:59');
+simConfigs.TIME_INTERVAL_IN_M = 15; % In minutes.
 
 %   - For the shadow location visualization video clip. For simplicity,
 %   please make sure PLAYBACK_SPEED/FRAME_RATE is an integer.
@@ -160,6 +174,8 @@ if exist(dirToSaveSimConfigs, 'file')
             '] The settings for this PRESET have changed!']);
     end
 else
+    % Note that the simConfigs saved now only contains user-specified
+    % parameters.
     save(dirToSaveSimConfigs, 'simConfigs', '-v7.3');
 end
 
@@ -290,7 +306,7 @@ lidarFileXYCentroids ...
 lidarMatFileAbsDirs = cellfun(@(d) regexprep(d, '\.img$', '.mat'), ...
     lidarFileAbsDirs, 'UniformOutput', false);
 
-%% Simulation: Sunrise and Sunset Times
+%% Simulation: Initialization
 
 disp(' ')
 disp(['    [', datestr(now, datetimeFormat), ...
@@ -305,7 +321,7 @@ if exist(dirToSaveSimState, 'file')
         PRESET, '" has been processed before.'])
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Loading history simState ...'])
-    load(dirToSaveSimState);
+    load(dirToSaveSimState, 'simState');
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Done!'])
 else
@@ -316,6 +332,17 @@ else
     % variable simState.
     %   - The number of grid locations to inspect.
     simState.numOfGridPts = size(simConfigs.gridLatLonPts, 1);
+    %   - LiDAR z values for the grid points.
+    % Temporarily disable the warning.
+    warning('off', 'MATLAB:dispatcher:UnresolvedFunctionHandle');
+    [simState.gridEles, simState.gridLidarZs, ~] ...
+        = generateProfileSamps( ...
+        [simConfigs.gridXYPts], simConfigs.utm2deg_speZone, ...
+        lidarFileXYCentroids, lidarFileXYCoveragePolyshapes, ...
+        lidarMatFileAbsDirs, 'both');
+    % Reenable warning.
+    warning('on', 'MATLAB:dispatcher:UnresolvedFunctionHandle');
+    
     %   - The number of times to inspect.
     simState.numOfTimesToInspect ...
         = length(simConfigs.localDatetimesToInspect);
@@ -356,11 +383,14 @@ else
     [simState.sunAzis, simState.sunZens, simState.uniformSunPower] ...
         = deal(nan([simState.numOfGridPts, simState.numOfTimesToInspect]));
     
-    % Generate a history file.
-    save(dirToSaveSimState, 'simState', '-v7.3');
+    % Generate a history file. Note that the simConfigs saved now contains
+    % information derived from the parameters set by the users.
+    save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Done!'])
 end
+
+%% Simulation: Sunrise and Sunset Times
 
 disp(' ')
 disp(['        [', datestr(now, datetimeFormat), ...
@@ -399,14 +429,15 @@ for idxDay = 1:totalNumOfDays
             % We will use the profile generation function to fetch the
             % LiDAR z value and use that as the elevation for the point of
             % interest. Essentially, it is a profile with only one location
-            % in it.
+            % in it. Note that this is different from the terrain elevation
+            % simState.gridEles (the height of the ground) .
             curSampLoc = generateTerrainProfileSampLocs( ...
                 curXY, curXY, ...
                 simConfigs.MAX_ALLOWED_LIDAR_PROFILE_RESOLUTION_IN_M, ...
                 1);
             % Temporarily disable the warning.
             warning('off', 'MATLAB:dispatcher:UnresolvedFunctionHandle');
-            [~, curEle, ~] ...
+            [~, curObserverEle, ~] ...
                 = generateProfileSamps( ...
                 curSampLoc, simConfigs.utm2deg_speZone, ...
                 lidarFileXYCentroids, lidarFileXYCoveragePolyshapes, ...
@@ -415,7 +446,7 @@ for idxDay = 1:totalNumOfDays
             warning('on', 'MATLAB:dispatcher:UnresolvedFunctionHandle');
             
             curSpaIn = constructSpaStruct(simConfigs.timezone, ...
-                curDatetime, [curLatLon curEle]);
+                curDatetime, [curLatLon curObserverEle]);
             % Calculate zenith, azimuth, and sun rise/transit/set values:
             % SPA_ZA_RTS = 2.
             curSpaIn.function = 2;
@@ -473,7 +504,7 @@ for idxDay = 1:totalNumOfDays
                     curDatetime = localDatetimesToInspect( ...
                         curIdxDatetime);
                     curSpaIn = constructSpaStruct(tz, ...
-                        curDatetime, [curLatLon curEle]);
+                        curDatetime, [curLatLon curObserverEle]);
                     % Calculate only zenith and azimuth: SPA_ZA = 0;
                     curSpaIn.function = 0;
                     [spaErrCode, curSpaOut] = getSolarPosition(curSpaIn);
@@ -635,9 +666,12 @@ for idxLoc = indicesLocToProcess
                         = curElesForNanProfLocs(curBoolsLidarSampsAreNan);
                 end
                 
+                curSunZen = curLocSunZensSeg(idxIdxDatetime);
                 curAltsOnDirectPath = linspace( ...
-                    curLidarProfile(1), curLidarProfile(end), ...
-                    size(curSampLocs,1));
+                    curLidarProfile(1), ...
+                    curLidarProfile(1) ...
+                    + radiusToInspectInM/tand(curSunZen), ...
+                    size(curSampLocs,1))';
                 if any(curAltsOnDirectPath<curLidarProfile)
                     % Obstacle detected.
                     curLocUniformSunPowersSeg(idxIdxDatetime) = 0;
@@ -686,6 +720,17 @@ end
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Done!'])
 
+%% Visualization: 3D LiDAR Plots for Debugging
+
+disp(' ')
+disp(['        [', datestr(now, datetimeFormat), ...
+    '] Generating plots for LiDAR data in the area of interest ...'])
+
+debugLidarDataForAreaOfInterest;
+
+disp(['        [', datestr(now, datetimeFormat), ...
+    '] Done!'])
+
 %% Visualization: Video Clip for Shadow Location
 
 disp(' ')
@@ -702,8 +747,9 @@ assert(floor(simTimeLenghtPerFrameInS)==simTimeLenghtPerFrameInS, ...
 % Plot the background.
 matRxLonLatWithPathLoss = [simConfigs.gridLatLonPts(:,[2,1]), ...
     simState.uniformSunPower(:,1)];
-[hFigShadowLoc, hShadowMapPoly] = ...
-    plotSunShadowMap(matRxLonLatWithPathLoss, simConfigs);
+sunAziZens = [simState.sunAzis(:,1), simState.sunZens(:,1)];
+[hFigShadowLoc, hsShadowMap] = ...
+    plotSunShadowMap(matRxLonLatWithPathLoss, simConfigs, sunAziZens);
 lastDatetime = simConfigs.localDatetimesToInspect(1);
 title(datestr(lastDatetime, datetimeFormat));
 
@@ -720,14 +766,16 @@ writeVideo(curVideoWriter, getframe(hFigShadowLoc));
 for curIdxDatetime = 2:length(simConfigs.localDatetimesToInspect)
     curDatetime = simConfigs.localDatetimesToInspect(curIdxDatetime);
     if seconds(curDatetime-lastDatetime)>=simTimeLenghtPerFrameInS
-        deleteHandles(hShadowMapPoly);
+        deleteHandles(hsShadowMap);
         
         % Update the figure.
         matRxLonLatWithPathLoss = [simConfigs.gridLatLonPts(:,[2,1]), ...
             simState.uniformSunPower(:,curIdxDatetime)];
-        [hFigShadowLoc, hShadowMapPoly] = ...
+        sunAziZens = [simState.sunAzis(:,curIdxDatetime), ...
+            simState.sunZens(:,curIdxDatetime)];
+        [hFigShadowLoc, hsShadowMap] = ...
             plotSunShadowMap(matRxLonLatWithPathLoss, ...
-            simConfigs, hFigShadowLoc);
+            simConfigs, hFigShadowLoc, sunAziZens);
         title(datestr(curDatetime, datetimeFormat));
         
         lastDatetime = curDatetime;

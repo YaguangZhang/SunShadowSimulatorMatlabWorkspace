@@ -1,5 +1,6 @@
-function [hFigShadowLoc, hShadowMapPoly, hPolyClear, hPolyBlocked] ...
-    = plotSunShadowMap(matLonLatSunPowers, simConfigs, ...
+function [hFigShadowLoc, hsShadowMap, ...
+    hPolyClear, hPolyBlocked] ...
+    = plotSunShadowMap(matLonLatSunPowers, simConfigs, sunAziZens, ...
     hFigShadowLoc, flagVisible, flagZoomIn, customFigSize)
 %PLOTSUNSHADOWMAP Plot the sun shadow on a map.
 %
@@ -16,6 +17,9 @@ function [hFigShadowLoc, hShadowMapPoly, hPolyClear, hPolyBlocked] ...
 %     The configuration struct for the simulation. We need fields:
 %     UTM_X_Y_BOUNDARY_OF_INTEREST, utm2deg_speZone, and
 %     numOfPixelsForLongerSide.
+%   - sunAziZens
+%     A two-column matrix [sunAzis, sunZens] for sun azimuth and zenith
+%     angles in degree for each map grid point.
 %   - flagVisible
 %     An optional boolean to control whether to show the plot or not.
 %   - flagZoomIn
@@ -29,14 +33,20 @@ function [hFigShadowLoc, hShadowMapPoly, hPolyClear, hPolyBlocked] ...
 % Outputs:
 %   - hFigShadowLoc
 %     The handle to the resultant figure.
-%   - hShadowMapPoly
-%     The handle to the color shadow illustration surf plot.
+%   - hsShadowMap
+%     A cell array of handles {hShadowMapPoly, hSunDirLines, (TODO)
+%     hLidarZ} to the black and white shadow illustration surf plot, a line
+%     illustrating the direction of the sun for each grid point, and (TODO)
+%     a color plot3k illustration for the LiDAR z values.
 %   - hPolyClear, hPolyBlocked
 %     The handles to empty polygons in the figure representing the styles
 %     of the clear regions and the blocked regions, respectively. Note that
 %     they are just for the legends.
 %
 % Yaguang Zhang, Purdue, 01/03/2021
+
+% (TODO) Set this to be true to also show LiDAR z on the plot.
+%FLAG_SHOW_LIDAR_Z = true;
 
 legendBackgroundColor = ones(1,3).*0.9;
 
@@ -68,12 +78,14 @@ if exist('hFigShadowLoc', 'var')
     flagFigAvailable = true;
 else
     if exist('customFigSize', 'var')
-        hFigShadowLoc = figure('visible', flagVisible, ...
+        hFigShadowLoc = figure('Visible', flagVisible, ...
             'Position', [0,0,customFigSize], ...
             'MenuBar', 'none', 'ToolBar', 'none');
     else
-        hFigShadowLoc = figure('visible', flagVisible, ...
-            'MenuBar', 'none', 'ToolBar', 'none');
+        % By default, start with a full-screen figure.
+        hFigShadowLoc = figure('Visible', flagVisible, ...
+            'MenuBar', 'none', 'ToolBar', 'none', ...
+            'Units', 'normalized', 'OuterPosition',[0 0 1 1]);
     end
     
     hFigShadowLoc.InvertHardcopy = 'off';
@@ -160,12 +172,16 @@ if ~flagFigAvailable
         'FaceColor', curColormap(1, :));
     hPolyBlocked = plot(polyshape(nan(3,2)), ...
         'FaceColor', curColormap(end, :));
+    hGridPts = plot(simConfigs.gridLatLonPts(:,2), ...
+        simConfigs.gridLatLonPts(:,1), '.k', 'MarkerSize', 3);
+    hSunDirLines = plot(nan, nan, '-', 'Color', [1,0,0,ALPHA]);
+    
     caxis(colorRange);
     xticks([]); yticks([]);
     xlabel(xLabelToSet); ylabel(yLabelToSet);
     
-    hLeg = legend([hPolyClear, hPolyBlocked], ...
-        'Clear', 'Blocked', ...
+    hLeg = legend([hGridPts, hSunDirLines, hPolyClear, hPolyBlocked], ...
+        'Grid Points', 'Sun Directions', 'Clear', 'Blocked', ...
         'Location', LEGEND_LOC, 'AutoUpdate','off');
     view(2);
     set(hLeg, 'color', legendBackgroundColor);
@@ -176,5 +192,26 @@ if ~flagFigAvailable
     
     plot_google_map('MapType', 'satellite');
 end
+
+% Plot the sun directions.
+axis manual; % Lock the axis limits.
+% Use the grid points as the start points.
+sunDirLineStartLons = simConfigs.gridLatLonPts(:,2)';
+sunDirLineStartLats = simConfigs.gridLatLonPts(:,1)';
+sunDirLineStartXs = simConfigs.gridXYPts(:,1)';
+sunDirLineStartYs = simConfigs.gridXYPts(:,2)';
+% Use the grid resolution length as the length of the line markers.
+sunDirLineLenInM = simConfigs.GRID_RESOLUTION_IN_M;
+% Compute the end points.
+[xs, ys] = aer2enu(sunAziZens(:,1), 90-sunAziZens(:,2), ...
+    ones(size(sunAziZens,1),1).*sunDirLineLenInM, 'degrees');
+sunDirLineEndXs = sunDirLineStartXs + xs';
+sunDirLineEndYs = sunDirLineStartYs + ys';
+[sunDirLineEndLats, sunDirLineEndLons] ...
+    = simConfigs.utm2deg_speZone(sunDirLineEndXs, sunDirLineEndYs);
+hSunDirLines = plot([sunDirLineStartLons; sunDirLineEndLons], ...
+    [sunDirLineStartLats; sunDirLineEndLats], '-', 'Color', [1,0,0,ALPHA]);
+
+hsShadowMap = {hShadowMapPoly, hSunDirLines};
 end
 % EOF
