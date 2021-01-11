@@ -12,7 +12,7 @@
 % simConfigs and simState, respectively. Please refer to the comments in
 % this file for more details.
 %
-% Yaguang Zhang, Purdue, 11/24/2020
+% Yaguang Zhang, Purdue, 01/09/2021
 
 clear; clc; close all; dbstop if error;
 
@@ -25,14 +25,12 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'PurdueMseeBuilding';
+PRESET = 'PurdueMseeBuilding_LasLidar';
 
 %% Script Parameters
 
-% The absolute path to the Lidar .las file. Currently supporting
-% 'Tipp_Extended' (for ten counties in the WHIN are), 'IN' (all Indiana)
-% and '' (automatically pick the biggest processed set).
-LIDAR_DATA_SET_TO_USE = '';
+% The foler name under ABS_PATH_TO_LIDAR for fetching the LiDAR data. 
+lidarDataSetToUse = 'MSEE_Extended_NAD83_PointCloud';
 
 % The absolute path to the folder for saving the results.
 folderToSaveResults = fullfile(ABS_PATH_TO_SHARED_FOLDER, ...
@@ -58,9 +56,9 @@ switch PRESET
     case 'GpsPts'
         simConfigs.LAT_LON_PTS_OF_INTEREST ...
             = [ ...
-            ... % A point at southwest of the Purdue engineering fountain.
-            40.428570, -86.913906];
-    case 'PurdueMseeBuilding'
+            ... % A point at southwest of MSEE building.
+            40.428951, -86.913309];
+    case 'PurdueMseeBuilding_LasLidar'
         %   - A small area around MSEE building.
         %     [40.428951, -86.913309; 40.429744, -86.912143]
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
@@ -68,21 +66,7 @@ switch PRESET
             [40.428951, -86.913309; 40.429744, -86.912143]);
         %   - We will use this spacial resolution to construct the
         %   inspection location grid for the area of interest.
-        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
-    case 'PurdueEngFountain'
-        %   - Just the fountain.
-        %     [40.428530, -86.913961; 40.428761, -86.913599]
-        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = constructUtmRectanglePolyMat(...
-            [40.428530, -86.913961; 40.428761, -86.913599]);
-        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
-    case 'PurdueMseeBuildingWithEngFountain'
-        %   - MSEE and the fountain
-        %     [40.428530, -86.913961; 40.429744, -86.912143]
-        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = constructUtmRectanglePolyMat(...
-            [40.428530, -86.913961; 40.429744, -86.912143]);
-        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+        simConfigs.GRID_RESOLUTION_IN_M = 1;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
 end
@@ -134,13 +118,13 @@ simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.05;
 %   will be derived from simConfigs.UTM_ZONE. The times to inspect are
 %   essentially constructed via something like:
 %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
-simConfigs.LOCAL_TIME_START = datetime('1-Jan-2021 15:00:00');
-simConfigs.LOCAL_TIME_END = datetime('1-Jan-2021 19:59:59');
+simConfigs.LOCAL_TIME_START = datetime('12-Jan-2021 12:00:00');
+simConfigs.LOCAL_TIME_END = datetime('12-Jan-2021 16:59:59');
 simConfigs.TIME_INTERVAL_IN_M = 15; % In minutes.
 
 %   - For the shadow location visualization video clip. For simplicity,
 %   please make sure PLAYBACK_SPEED/FRAME_RATE is an integer.
-simConfigs.FRAME_RATE = 1; % In FPS.
+simConfigs.FRAME_RATE = 30; % In FPS.
 %   For example, 3600: 1 hour in real time => 1 second in the video.
 simConfigs.PLAYBACK_SPEED = 3600; % Relative to real time.
 
@@ -179,9 +163,8 @@ else
     save(dirToSaveSimConfigs, 'simConfigs', '-v7.3');
 end
 
-% Pre-assign LIDAR_DATA_SET_TO_USE based on the user's settings. We will
-% verify this value later.
-simConfigs.LIDAR_DATA_SET_TO_USE = LIDAR_DATA_SET_TO_USE;
+% Pre-assign LIDAR_DATA_SET_TO_USE based on the user's settings. 
+simConfigs.LIDAR_DATA_SET_TO_USE = lidarDataSetToUse;
 
 % Convert GPS degrees to UTM coordinates for the specified zone.
 utmstruct_speZone = defaultm('utm');
@@ -272,22 +255,14 @@ disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 % and (2) once we have gone through all the data once, loading the
 % information would be very fast.
 
-% Make sure the chosen LiDAR dataset to use in the simulation is indeed
-% available, and if it is not specified (LIDAR_DATA_SET_TO_USE = ''),
-% default to the bigger LiDAR dataset that has been preprocessed before for
-% better coverage.
-[verifiedLidarDataSetToUse] = verifyLidarDataSetToUse( ...
-    simConfigs.LIDAR_DATA_SET_TO_USE, ABS_PATH_TO_LIDAR);
-
 dirToLidarFiles = fullfile(ABS_PATH_TO_LIDAR, ...
-    'Lidar', verifiedLidarDataSetToUse);
+    'Lidar', lidarDataSetToUse);
 
-% Preprocess .img LiDAR data. To make Matlab R2019b work, we need to remove
+% Preprocess .las LiDAR data. To make Matlab R2019b work, we need to remove
 % preprocessIndianaLidarDataSet from path after things are done.
-simConfigs.LIDAR_DATA_SET_TO_USE = verifiedLidarDataSetToUse;
 addpath(fullfile(pwd, 'libs', 'lidar'));
 [lidarFileRelDirs, lidarFileXYCoveragePolyshapes, ~] ...
-    = preprocessIndianaLidarDataSet(dirToLidarFiles, ...
+    = preprocessIndianaLidarDataSetLas(dirToLidarFiles, ...
     deg2utm_speZone, utm2deg_speZone);
 rmpath(fullfile(pwd, 'libs', 'lidar'));
 lidarFileAbsDirs = cellfun(@(d) ...
@@ -303,7 +278,7 @@ lidarFilesXYCoveragePolyshape ...
 lidarFileXYCentroids ...
     = extractCentroidsFrom2DPolyCell(lidarFileXYCoveragePolyshapes);
 %   - The .mat copies for the LiDAR data.
-lidarMatFileAbsDirs = cellfun(@(d) regexprep(d, '\.img$', '.mat'), ...
+lidarMatFileAbsDirs = cellfun(@(d) regexprep(d, '\.las$', '.mat'), ...
     lidarFileAbsDirs, 'UniformOutput', false);
 
 %% Simulation: Initialization
@@ -775,7 +750,7 @@ for curIdxDatetime = 2:length(simConfigs.localDatetimesToInspect)
             simState.sunZens(:,curIdxDatetime)];
         [hFigShadowLoc, hsShadowMap] = ...
             plotSunShadowMap(matRxLonLatWithPathLoss, ...
-            simConfigs, hFigShadowLoc, sunAziZens);
+            simConfigs, sunAziZens, hFigShadowLoc);
         title(datestr(curDatetime, datetimeFormat));
         
         lastDatetime = curDatetime;

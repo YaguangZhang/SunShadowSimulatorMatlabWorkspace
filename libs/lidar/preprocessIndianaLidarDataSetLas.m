@@ -1,25 +1,24 @@
 function [lidarFileRelDirs, xYBoundryPolygons, lonLatBoundryPolygons] ...
-    = preprocessIndianaLidarDataSet(ABS_PATH_TO_LOAD_LIDAR, ...
+    = preprocessIndianaLidarDataSetLas(ABS_PATH_TO_LOAD_LIDAR, ...
     DEG2UTM_FCT, UTM2DEG_FCT)
-%PREPROCESSINDIANALIDARDATASET Preprocess the LiDAR data set located at
-%ABS_PATH_TO_LOAD_LIDAR.
+%PREPROCESSINDIANALIDARDATASETLAS Preprocess the .las LiDAR data set
+%located at ABS_PATH_TO_LOAD_LIDAR.
 %
 % We will load the LiDAR data, obtain the sample locations, obtain the
 % elevation data for them, and save the results in .mat files.
 %
 % Inputs:
 %   - ABS_PATH_TO_LOAD_LIDAR
-%     The absolute path to the .img LiDAR data obtained from
-%       https://cloud.sdsc.edu/v1/AUTH_opentopography/Raster
-%     We have converted the original .img files into .tif files via the
-%     gdal_translate command of the GDAL library
-%     (https://gdal.org/programs/gdal_translate.html) for better
-%     compatibility with Matlab. Note that the LiDAR data files should be
-%     organized under two subdirectories under ABS_PATH_TO_LOAD_LIDAR
+%     The absolute path to the .las LiDAR data (unit: ftUS) obtained from
+%       https://portal.opentopography.org/lidarDataset?opentopoID=OTLAS.062012.4326.1
+%     Note that the LiDAR data files should be organized under two
+%     subdirectories under ABS_PATH_TO_LOAD_LIDAR
 %       - IN_2011_2013_W
-%           Data for west Indiana.
+%           Data for west Indiana, cooresponding to the output coordinate
+%           system: NAD83 Indiana West (ftUS) [EPSG: 2966].
 %       - IN_2011_2013_E
-%           Data for east Indiana.
+%           Data for east Indiana, cooresponding to the output coordinate
+%           system: NAD83 Indiana East (ftUS) [EPSG: 2965].
 %     This is required to correctly convert the unit survey foot in the
 %     LiDAR data to the metric system.
 %   - DEG2UTM_FCT, UTM2DEG_FCT
@@ -69,17 +68,18 @@ if exist(ABS_DIR_TO_SAVE_RESULTS, 'file') ...
     load(ABS_DIR_TO_SAVE_RESULTS, ...
         'lidarFileRelDirs', 'xYBoundryPolygons', 'lonLatBoundryPolygons');
 else
-    imgFileHandles = rdir(fullfile( ...
-        ABS_PATH_TO_LOAD_LIDAR, '**', '*.img'), ...
+    lasFileHandles = rdir(fullfile( ...
+        ABS_PATH_TO_LOAD_LIDAR, '**', '*.las'), ...
         '', ABS_PATH_TO_LOAD_LIDAR);
-    lidarFileRelDirs = {imgFileHandles(:).name}';
+    lidarFileRelDirs = {lasFileHandles(:).name}';
     
     numLidarFiles = length(lidarFileRelDirs);
     
     [xYBoundryPolygons, lonLatBoundryPolygons] ...
         = deal(cell(numLidarFiles,1));
     
-    parfor idxF = 1:numLidarFiles
+    % TODO: if the number of files to process is large, use parfor here.
+    for idxF = 1:numLidarFiles
         try
             tic;
             
@@ -132,20 +132,19 @@ else
                 
                 % Load LiDAR data.
                 curLidarFileAbsDir = fullfile(ABS_PATH_TO_LOAD_LIDAR, ...
-                    curLidarFileParentRelDir, [curLidarFileName, '.tif']);
-                [lidarDataImg, ~] ...
-                    = geotiffread(curLidarFileAbsDir);
-                lidarDataImg(abs(lidarDataImg(:))>maxAllowedAbsLidarZ) ...
+                    curLidarFileParentRelDir, [curLidarFileName, '.las']);
+                lidarData = lasdata(curLidarFileAbsDir);
+                
+                lidarDataXs = lidarData.x;
+                lidarDataYs = lidarData.y;
+                lidarDataZs = lidarData.z;
+                lidarDataZs(abs(lidarDataZs(:))>maxAllowedAbsLidarZ) ...
                     = nan;
                 
-                [lidarRasterXLabels, lidarRasterYLabels] ...
-                    = pixcenters(geotiffinfo(curLidarFileAbsDir));
-                
                 % Convert survery feet to meter.
-                lidarDataImg = distdim(lidarDataImg, 'ft', 'm');
+                lidarDataZs = distdim(lidarDataZs, 'ft', 'm');
                 % Convert raster (row, col) to (lat, lon).
-                pathparts = strsplit(curLidarFileParentRelDir, filesep);
-                
+                pathparts = strsplit(curLidarFileParentRelDir, filesep);                
                 assert( ...
                     strcmpi(pathparts{2}(1:(end-1)), 'IN_2011_2013_'), ...
                     'Data are not from Indiana 2011~2013 LiDAR datasets!');
@@ -161,18 +160,16 @@ else
                             ['Unknown Indiana dataset for ', ...
                             'STATE_PLANE_CODE_TIPP!']);
                 end
-                [lidarRasterXs, lidarRasterYs] ...
-                    = meshgrid(lidarRasterXLabels, lidarRasterYLabels);
                 [lidarLons, lidarLats] ...
                     = sp_proj(STATE_PLANE_CODE_TIPP, 'inverse', ...
-                    lidarRasterXs(:), lidarRasterYs(:), 'sf');
+                    lidarDataXs(:), lidarDataYs(:), 'sf');
                 
                 % Store the new (x,y,z) data.
                 lidarLats = lidarLats(:);
                 lidarLons = lidarLons(:);
                 [lidarXs, lidarYs] ...
                     = DEG2UTM_FCT(lidarLats, lidarLons);
-                lidarXYZ = [lidarXs, lidarYs, lidarDataImg(:)];
+                lidarXYZ = [lidarXs, lidarYs, lidarDataZs(:)];
                 
                 % Find the polygon boundaries.
                 xYBoundryPolygonIndices = boundary(lidarXs, lidarYs);
@@ -194,9 +191,10 @@ else
                 fctLonLatToLidarStatePlaneXY ...
                     = @(lon, lat) sp_proj(STATE_PLANE_CODE_TIPP, ...
                     'forward', lon, lat, 'sf');
-                getLiDarZFromStatePlaneXYFct = @(spXs, spYs) ...
-                    interp2(lidarRasterXs, lidarRasterYs, ...
-                    lidarDataImg, spXs, spYs);
+                
+                getLiDarZFromStatePlaneXYFct = ...
+                    scatteredInterpolant(lidarDataXs, lidarDataYs, ...
+                    lidarDataZs);
                 getLiDarZFromXYFct ...
                     = @(xs, ys) genRasterLidarZGetter( ...
                     getLiDarZFromStatePlaneXYFct, ...
@@ -307,10 +305,10 @@ else
                     lidarEles = getElevations(lidarLats, lidarLons, ...
                         'key', googleApiKeyFile.apiKey);
                     lidarRasterEles ...
-                        = reshape(lidarEles, size(lidarRasterXs));
+                        = reshape(lidarEles, size(lidarDataXs));
                     
                     getLiDarZFromStatePlaneXYFct = @(spXs, spYs) ...
-                        interp2(lidarRasterXs, lidarRasterYs, ...
+                        interp2(lidarDataXs, lidarDataYs, ...
                         lidarRasterEles, spXs, spYs);
                     getEleFromXYFct ...
                         = @(xs, ys) genRasterLidarZGetter( ...
