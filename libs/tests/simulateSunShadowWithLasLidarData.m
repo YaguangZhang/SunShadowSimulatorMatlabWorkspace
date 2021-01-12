@@ -75,7 +75,7 @@ switch PRESET
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
             [41.096616, -86.560437; 41.097695, -86.558927]);
-        simConfigs.GRID_RESOLUTION_IN_M = 1;
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
 end
@@ -132,7 +132,7 @@ simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.05;
 %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
 simConfigs.LOCAL_TIME_START = datetime('14-Jan-2021 7:00:00');
 simConfigs.LOCAL_TIME_END = datetime('14-Jan-2021 16:59:59');
-simConfigs.TIME_INTERVAL_IN_M = 15; % In minutes.
+simConfigs.TIME_INTERVAL_IN_M = 30; % In minutes.
 
 %   - For the shadow location visualization video clip. For simplicity,
 %   please make sure PLAYBACK_SPEED/FRAME_RATE is an integer.
