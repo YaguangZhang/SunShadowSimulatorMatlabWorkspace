@@ -115,12 +115,15 @@ simConfigs.MAX_ALLOWED_LIDAR_PROFILE_RESOLUTION_IN_M = 1.5;
 %   low, the accuracy of the simulation may decrease, too, especially for
 %   the case when the sun is at a low angle (then a low obstacle far away
 %   may still block the location of interest).
-%     Say the sunshine duration is 12 hours a day and the sun location is
+%     The length of the LiDAR profile needs to be chosen wisely because
+%     obstacles could cause extremely long shadows at sunset/sunrise. Say
+%     the sunshine duration is 12 hours/day and the sun location is
 %     uniformly distributed in [0, 180] degrees, where 0 degree corresponds
-%     to sunrise and 180 degrees corresponds to sunset. Then if we would
-%     like to ignore 15 min of sunshine right after the sunrise and before
-%     the sunset, with a typical three-story building (~ 10 m high), we
-%     would need a radius to inspect of r meters, such that:
+%     to sunrise and 180 degrees corresponds to sunset. Then, if we would
+%     like to allow inaccurate results for 15 min of sunshine right after
+%     the sunrise and before the sunset, with a typical three-story
+%     building (~10 m high), we would need a radius to inspect of r meters
+%     such that:
 %         arctand(10/r)*2/180 *12*60 = 15*2
 %     We can get r here is around 152 meters:
 %         r = 10/tand(15*2/60/12*180/2) = 152.5705
@@ -134,15 +137,23 @@ simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.05;
 %   will be derived from simConfigs.UTM_ZONE. The times to inspect are
 %   essentially constructed via something like:
 %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
-simConfigs.LOCAL_TIME_START = datetime('1-Jan-2021 15:00:00');
-simConfigs.LOCAL_TIME_END = datetime('1-Jan-2021 19:59:59');
+simConfigs.LOCAL_TIME_START = datetime('12-Jan-2021 12:00:00');
+simConfigs.LOCAL_TIME_END = datetime('12-Jan-2021 16:59:59');
 simConfigs.TIME_INTERVAL_IN_M = 15; % In minutes.
 
 %   - For the shadow location visualization video clip. For simplicity,
 %   please make sure PLAYBACK_SPEED/FRAME_RATE is an integer.
-simConfigs.FRAME_RATE = 1; % In FPS.
-%   For example, 3600: 1 hour in real time => 1 second in the video.
-simConfigs.PLAYBACK_SPEED = 3600; % Relative to real time.
+simConfigs.FRAME_RATE = 30; % In FPS.
+%   For example,
+%       - Speed = 3600
+%         1 hour in real time => 1 second in the video.
+%       - Speed = 900
+%         15 min in real time => 1 second in the video.
+%       - Speed = 300
+%         5 min in real time => 1 second in the video.
+%       - Speed = 60
+%         1 min in real time => 1 second in the video.
+simConfigs.PLAYBACK_SPEED = 900; % Relative to real time.
 
 %% Derive Other Configurations Accordingly
 
@@ -737,10 +748,12 @@ disp(' ')
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Generating illustration video clip for shadow location ...'])
 
+timeToPauseForFigUpdateInS = 0.001;
 pathToSaveVideo = fullfile(folderToSaveResults, 'shadowLocOverTime.mp4');
+
 % Video parameters.
-simTimeLenghtPerFrameInS = simConfigs.PLAYBACK_SPEED/simConfigs.FRAME_RATE;
-assert(floor(simTimeLenghtPerFrameInS)==simTimeLenghtPerFrameInS, ...
+simTimeLengthPerFrameInS = simConfigs.PLAYBACK_SPEED/simConfigs.FRAME_RATE;
+assert(floor(simTimeLengthPerFrameInS)==simTimeLengthPerFrameInS, ...
     ['For simplicity, ', ...
     'please make sure PLAYBACK_SPEED/VIDEO_FRAME_RATE is an integer!']);
 
@@ -752,6 +765,7 @@ sunAziZens = [simState.sunAzis(:,1), simState.sunZens(:,1)];
     plotSunShadowMap(matRxLonLatWithPathLoss, simConfigs, sunAziZens);
 lastDatetime = simConfigs.localDatetimesToInspect(1);
 title(datestr(lastDatetime, datetimeFormat));
+drawnow; pause(timeToPauseForFigUpdateInS);
 
 % Create a video writer for outputting the frames.
 curVideoWriter = VideoWriter( ...
@@ -759,31 +773,37 @@ curVideoWriter = VideoWriter( ...
 curVideoWriter.FrameRate = simConfigs.FRAME_RATE;
 open(curVideoWriter);
 
-drawnow; pause(0.1);
-writeVideo(curVideoWriter, getframe(hFigShadowLoc));
-
 % Go through all remaining times.
 for curIdxDatetime = 2:length(simConfigs.localDatetimesToInspect)
     curDatetime = simConfigs.localDatetimesToInspect(curIdxDatetime);
-    if seconds(curDatetime-lastDatetime)>=simTimeLenghtPerFrameInS
-        deleteHandles(hsShadowMap);
-        
-        % Update the figure.
-        matRxLonLatWithPathLoss = [simConfigs.gridLatLonPts(:,[2,1]), ...
-            simState.uniformSunPower(:,curIdxDatetime)];
-        sunAziZens = [simState.sunAzis(:,curIdxDatetime), ...
-            simState.sunZens(:,curIdxDatetime)];
-        [hFigShadowLoc, hsShadowMap] = ...
-            plotSunShadowMap(matRxLonLatWithPathLoss, ...
-            simConfigs, hFigShadowLoc, sunAziZens);
-        title(datestr(curDatetime, datetimeFormat));
-        
-        lastDatetime = curDatetime;
+    
+    % Output the video.
+    lastSimTime = lastDatetime;
+    for curSimTimeInS = lastDatetime:seconds(1):(curDatetime-seconds(1))
+        elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
+        if elapsedSimTimeInS>=simTimeLengthPerFrameInS
+            writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+            lastSimTime = curSimTimeInS;
+        end
     end
     
-    drawnow;
-    writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+    % Update the figure.
+    deleteHandles(hsShadowMap);
+    
+    matRxLonLatWithPathLoss = [simConfigs.gridLatLonPts(:,[2,1]), ...
+        simState.uniformSunPower(:,curIdxDatetime)];
+    sunAziZens = [simState.sunAzis(:,curIdxDatetime), ...
+        simState.sunZens(:,curIdxDatetime)];
+    [hFigShadowLoc, hsShadowMap] = ...
+        plotSunShadowMap(matRxLonLatWithPathLoss, ...
+        simConfigs, sunAziZens, hFigShadowLoc);
+    title(datestr(curDatetime, datetimeFormat));
+    drawnow; pause(timeToPauseForFigUpdateInS);
+    
+    lastDatetime = curDatetime;
 end
+% Output the last frame and close the video writer.
+writeVideo(curVideoWriter, getframe(hFigShadowLoc));
 close(curVideoWriter);
 
 disp(['        [', datestr(now, datetimeFormat), ...
@@ -798,5 +818,9 @@ disp(['        [', datestr(now, datetimeFormat), ...
     '] Done!'])
 
 disp(['    [', datestr(now, datetimeFormat), '] Done!'])
+
+%% Cleanup
+
+diary off;
 
 % EOF
