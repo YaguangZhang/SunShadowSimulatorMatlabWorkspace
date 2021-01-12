@@ -18,6 +18,7 @@ plot(lonLatBoundryPolygon, ...
     'FaceColor','red','FaceAlpha',0.1);
 plot3k([lidarLons, lidarLats, lidarXYZ(:,3)]);
 view(2);
+plot_google_map('MapType', 'satellite');
 title('LiDAR z (m) on Map');
 
 % lidarXYZ.
@@ -68,7 +69,8 @@ curFigList = findobj(allchild(0), 'flat', ...
     'Type', 'figure');
 for idxFig = 1:length(curFigList)
     curFigHandle = curFigList(idxFig);
-    curFigName   = num2str(get(curFigHandle, 'Number'));
+    curFigName   = ['LidarFile_', num2str(idxF), ...
+        '_Fig_', num2str(get(curFigHandle, 'Number'))];
     set(0, 'CurrentFigure', curFigHandle);
     saveas(curFigHandle, fullfile(debugResultsDir, ...
         [curFigName '.fig']));

@@ -26,12 +26,15 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'PurdueMseeBuilding_LasLidar';
+PRESET = 'INDOT_RoadShadow_Community_Loc_1';
 
 %% Script Parameters
 
 % The folder name under ABS_PATH_TO_LIDAR for fetching the LiDAR data.
-lidarDataSetToUse = 'MSEE_Extended_NAD83_PointCloud';
+%   - MSEE_Extended_NAD83_PointCloud
+%   - INDOT_RoadShadow_Community_NAD83_PointCloud_NoiseExcluded
+lidarDataSetToUse ...
+    = 'INDOT_RoadShadow_Community_NAD83_PointCloud_NoiseExcluded';
 
 % The absolute path to the folder for saving the results.
 folderToSaveResults = fullfile(ABS_PATH_TO_SHARED_FOLDER, ...
@@ -67,6 +70,11 @@ switch PRESET
             [40.428951, -86.913309; 40.429744, -86.912143]);
         %   - We will use this spacial resolution to construct the
         %   inspection location grid for the area of interest.
+        simConfigs.GRID_RESOLUTION_IN_M = 1;
+    case 'INDOT_RoadShadow_Community_Loc_1'
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRectanglePolyMat(...
+            [41.096616, -86.560437; 41.097695, -86.558927]);
         simConfigs.GRID_RESOLUTION_IN_M = 1;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
@@ -122,8 +130,8 @@ simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.05;
 %   will be derived from simConfigs.UTM_ZONE. The times to inspect are
 %   essentially constructed via something like:
 %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
-simConfigs.LOCAL_TIME_START = datetime('12-Jan-2021 12:00:00');
-simConfigs.LOCAL_TIME_END = datetime('12-Jan-2021 16:59:59');
+simConfigs.LOCAL_TIME_START = datetime('14-Jan-2021 7:00:00');
+simConfigs.LOCAL_TIME_END = datetime('14-Jan-2021 16:59:59');
 simConfigs.TIME_INTERVAL_IN_M = 15; % In minutes.
 
 %   - For the shadow location visualization video clip. For simplicity,
@@ -138,7 +146,7 @@ simConfigs.FRAME_RATE = 30; % In FPS.
 %         5 min in real time => 1 second in the video.
 %       - Speed = 60
 %         1 min in real time => 1 second in the video.
-simConfigs.PLAYBACK_SPEED = 900; % Relative to real time.
+simConfigs.PLAYBACK_SPEED = 1800; % Relative to real time.
 
 %% Derive Other Configurations Accordingly
 
