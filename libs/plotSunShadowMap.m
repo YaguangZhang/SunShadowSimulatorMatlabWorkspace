@@ -74,7 +74,8 @@ colorRange = [0,1];
 
 flagFigAvailable = false;
 if exist('hFigShadowLoc', 'var')
-    figure(hFigShadowLoc);
+    % Set current figure without making it visible.
+    set(0, 'CurrentFigure', hFigShadowLoc)
     flagFigAvailable = true;
 else
     if exist('customFigSize', 'var')

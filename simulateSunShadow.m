@@ -803,7 +803,14 @@ for curIdxDatetime = 2:length(simConfigs.localDatetimesToInspect)
     lastDatetime = curDatetime;
 end
 % Output the last frame and close the video writer.
-writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+for curSimTimeInS ...
+        = lastDatetime:seconds(1):(simConfigs.LOCAL_TIME_END-seconds(1))
+    elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
+    if elapsedSimTimeInS>=simTimeLengthPerFrameInS
+        writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+        lastSimTime = curSimTimeInS;
+    end
+end
 close(curVideoWriter);
 
 disp(['        [', datestr(now, datetimeFormat), ...

@@ -26,13 +26,13 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'INDOT_RoadShadow_Community_Loc_1';
+PRESET = 'INDOT_RoadShadow_Community_Loc_7';
 
 %% Script Parameters
 
 % The folder name under ABS_PATH_TO_LIDAR for fetching the LiDAR data.
-%   - MSEE_Extended_NAD83_PointCloud
-%   - INDOT_RoadShadow_Community_NAD83_PointCloud_NoiseExcluded
+%   - MSEE_Extended_NAD83_PointCloud -
+%   INDOT_RoadShadow_Community_NAD83_PointCloud_NoiseExcluded
 lidarDataSetToUse ...
     = 'INDOT_RoadShadow_Community_NAD83_PointCloud_NoiseExcluded';
 
@@ -75,6 +75,11 @@ switch PRESET
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
             [41.096616, -86.560437; 41.097695, -86.558927]);
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
+    case 'INDOT_RoadShadow_Community_Loc_7'
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRectanglePolyMat(...
+            [41.096873, -86.556410; 41.097739, -86.554871]);
         simConfigs.GRID_RESOLUTION_IN_M = 3;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
@@ -787,7 +792,14 @@ for curIdxDatetime = 2:length(simConfigs.localDatetimesToInspect)
     lastDatetime = curDatetime;
 end
 % Output the last frame and close the video writer.
-writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+for curSimTimeInS ...
+        = lastDatetime:seconds(1):(simConfigs.LOCAL_TIME_END-seconds(1))
+    elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
+    if elapsedSimTimeInS>=simTimeLengthPerFrameInS
+        writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+        lastSimTime = curSimTimeInS;
+    end
+end
 close(curVideoWriter);
 
 disp(['        [', datestr(now, datetimeFormat), ...
