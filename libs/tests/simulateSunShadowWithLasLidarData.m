@@ -26,7 +26,7 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'INDOT_RoadShadow_SR35_Loc_1';
+PRESET = 'INDOT_RoadShadow_SR35_Loc_2';
 
 %% Script Parameters
 
@@ -77,14 +77,21 @@ switch PRESET
     case 'INDOT_RoadShadow_SR35_Loc_1'
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
-            [41.096616, -86.560437; 41.097695, -86.558927]);
+            [41.159544, -86.602513; 41.160881, -86.602380]);
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
+        lidarDataSetToUse ...
+            = 'INDOT_RoadShadow_SR35_NAD83_PointCloud_NoiseExcluded';
+    case 'INDOT_RoadShadow_SR35_Loc_2'
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRectanglePolyMat(...
+            [41.149882, -86.602565; 41.151179, -86.602380]);
         simConfigs.GRID_RESOLUTION_IN_M = 3;
         lidarDataSetToUse ...
             = 'INDOT_RoadShadow_SR35_NAD83_PointCloud_NoiseExcluded';
     case 'INDOT_RoadShadow_Community_Loc_1'
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
-            [41.159544, -86.602513; 41.160881, -86.602380]);
+            [41.096616, -86.560437; 41.097695, -86.558927]);
         simConfigs.GRID_RESOLUTION_IN_M = 3;
         lidarDataSetToUse ...
             = 'INDOT_RoadShadow_Community_NAD83_PointCloud_NoiseExcluded';
