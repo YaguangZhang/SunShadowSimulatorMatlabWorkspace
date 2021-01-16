@@ -26,7 +26,7 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'INDOT_RoadShadow_SR35_Loc_3';
+PRESET = 'INDOT_RoadShadow_SR35_Loc_4';
 
 %% Script Parameters
 
@@ -92,6 +92,13 @@ switch PRESET
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
             [41.142108, -86.602631; 41.143345, -86.602473]);
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
+        lidarDataSetToUse ...
+            = 'INDOT_RoadShadow_SR35_NAD83_PointCloud_NoiseExcluded';
+    case 'INDOT_RoadShadow_SR35_Loc_4'
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRectanglePolyMat(...
+            [41.122760, -86.602805; 41.124215, -86.602661]);
         simConfigs.GRID_RESOLUTION_IN_M = 3;
         lidarDataSetToUse ...
             = 'INDOT_RoadShadow_SR35_NAD83_PointCloud_NoiseExcluded';
