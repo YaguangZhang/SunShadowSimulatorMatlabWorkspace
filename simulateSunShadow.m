@@ -29,14 +29,17 @@ PRESET = 'PurdueMseeBuilding';
 
 %% Script Parameters
 
-% The absolute path to the Lidar .las file. Currently supporting
-% 'Tipp_Extended' (for ten counties in the WHIN are), 'IN' (all Indiana)
-% and '' (automatically pick the biggest processed set).
-LIDAR_DATA_SET_TO_USE = '';
+% The LiDAR data set to use. Currently we only suppor the 2019 Indiana
+% state-wide digital surface model (DSM) data from:
+%       https://lidar.jinha.org/
+% Set this to "IN_DSM_2019"/"IN_DSM_2019_DEMO" for the complete/a demo data
+% set.
+LIDAR_DATA_SET_TO_USE = 'IN_DSM_2019_DEMO';
 
 % The absolute path to the folder for saving the results.
 folderToSaveResults = fullfile(ABS_PATH_TO_SHARED_FOLDER, ...
-    'SunShadowSimulatorResults', ['Simulation_', PRESET]);
+    'SunShadowSimulatorResults', ['Simulation_', PRESET, ...
+    '_LiDAR_', LIDAR_DATA_SET_TO_USE]);
 
 % The format to use for displaying datetime.
 datetimeFormat = 'yyyy/mm/dd HH:MM:ss';
@@ -283,22 +286,24 @@ disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 % and (2) once we have gone through all the data once, loading the
 % information would be very fast.
 
-% Make sure the chosen LiDAR dataset to use in the simulation is indeed
-% available, and if it is not specified (LIDAR_DATA_SET_TO_USE = ''),
-% default to the bigger LiDAR dataset that has been preprocessed before for
-% better coverage.
-[verifiedLidarDataSetToUse] = verifyLidarDataSetToUse( ...
-    simConfigs.LIDAR_DATA_SET_TO_USE, ABS_PATH_TO_LIDAR);
-
-dirToLidarFiles = fullfile(ABS_PATH_TO_LIDAR, ...
-    'Lidar', verifiedLidarDataSetToUse);
+% Set the dir to find the LiDAR data set.
+switch simConfigs.LIDAR_DATA_SET_TO_USE
+    case 'IN_DSM_2019_DEMO'
+        dirToLidarFiles = fullfile(ABS_PATH_TO_LIDAR, ...
+            'Lidar_2019', 'IN', 'DSM_Demo');
+    case 'IN_DSM_2019'
+        dirToLidarFiles = fullfile(ABS_PATH_TO_LIDAR, ...
+            'Lidar_2019', 'IN', 'DSM');
+    otherwise
+        error(['Unkown LiDAR data set ', ...
+            simConfigs.LIDAR_DATA_SET_TO_USE, '!'])
+end
 
 % Preprocess .img LiDAR data. To make Matlab R2019b work, we need to remove
 % preprocessIndianaLidarDataSet from path after things are done.
-simConfigs.LIDAR_DATA_SET_TO_USE = verifiedLidarDataSetToUse;
 addpath(fullfile(pwd, 'libs', 'lidar'));
 [lidarFileRelDirs, lidarFileXYCoveragePolyshapes, ~] ...
-    = preprocessIndianaLidarDataSet(dirToLidarFiles, ...
+    = preprocessIndianaLidarDataSetDsm(dirToLidarFiles, ...
     deg2utm_speZone, utm2deg_speZone);
 rmpath(fullfile(pwd, 'libs', 'lidar'));
 lidarFileAbsDirs = cellfun(@(d) ...
