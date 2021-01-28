@@ -87,7 +87,7 @@ hVertPts = plot(vertLons, vertLats, 'xy');
 plot_google_map('MapType', 'hybrid');
 title({['Locations to Inspect (Side Length = ', ...
     num2str(sideLengthInKm), ' km)'];
-    'Indiana width ~= 435 km; Indiana height ~= 285 km'});
+    'Indiana width ~= 285 km; Indiana height ~= 435 km'});
 legend([hHoriPts, hVertPts], 'Horizontal Locs', 'Vertical Locs');
 saveas(hLocsToInspect, ...
     fullfile(folderToSaveResults, 'locsToInspect.fig'));
