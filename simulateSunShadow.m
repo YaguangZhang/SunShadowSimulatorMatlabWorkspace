@@ -222,6 +222,19 @@ simConfigs.localDatetimesToInspect = simConfigs.LOCAL_TIME_START ...
     :simConfigs.LOCAL_TIME_END;
 
 % The locations of interest to inspect.
+if isfield(simConfigs, 'LAT_LON_BOUNDARY_OF_INTEREST')
+    if isfield(simConfigs, 'UTM_X_Y_BOUNDARY_OF_INTEREST')
+        error(['Boundry of interest was set ', ...
+            'both in GPS (lat, lon) and UTM (x, y)!'])
+    else
+        [utmXsForBoundaryOfInterest, utmYsForBoundaryOfInterest] = ...
+            simConfigs.deg2utm_speZone( ...
+            simConfigs.LAT_LON_BOUNDARY_OF_INTEREST(:,1), ...
+            simConfigs.LAT_LON_BOUNDARY_OF_INTEREST(:,2));
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST = ...
+            [utmXsForBoundaryOfInterest, utmYsForBoundaryOfInterest];
+    end
+end
 flagGpsPtsOfInterestSpecified ...
     = isfield(simConfigs, 'LAT_LON_PTS_OF_INTEREST');
 flagAreaOfInterestSpecified ...
@@ -405,6 +418,9 @@ else
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Done!'])
 end
+
+%% Simulation Overview Plot
+overviewGridOnMap;
 
 %% Simulation: Sunrise and Sunset Times
 

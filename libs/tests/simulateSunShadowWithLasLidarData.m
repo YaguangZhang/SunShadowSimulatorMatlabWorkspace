@@ -26,7 +26,7 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'INDOT_RoadShadow_SR35_Loc_7';
+PRESET = 'INDOT_RoadShadow_US41_Loc_1';
 
 %% Script Parameters
 
@@ -46,10 +46,10 @@ datetimeFormat = 'yyyy/mm/dd HH:MM:ss';
 %   - A string label to identify this simulation.
 simConfigs.CURRENT_SIMULATION_TAG = PRESET;
 
-%   - The UTM (x, y) polygon boundary vertices representing the area of
-%   interest for generating the coverage maps; note that it is possible to
-%   use the region covered by the available LiDAR data set as the
-%   corresponding area of interest.
+%   - The UTM (x, y)/GPS (lat, lon) polygon boundary vertices representing
+%   the area of interest for generating the coverage maps; note that it is
+%   possible to use the region covered by the available LiDAR data set as
+%   the corresponding area of interest.
 switch PRESET
     case 'GpsPts'
         simConfigs.LAT_LON_PTS_OF_INTEREST ...
@@ -123,6 +123,20 @@ switch PRESET
         simConfigs.GRID_RESOLUTION_IN_M = 3;
         lidarDataSetToUse ...
             = 'INDOT_RoadShadow_SR35_NAD83_PointCloud_NoiseExcluded';
+    case 'INDOT_RoadShadow_US41_Loc_1'
+        simConfigs.LAT_LON_BOUNDARY_OF_INTEREST = [39.568783, -87.371034;
+            39.568989, -87.370522;
+            39.569329, -87.369990;
+            39.569666, -87.369665;
+            39.569628, -87.369552;
+            39.569383, -87.369766;
+            39.569107, -87.370077;
+            39.568880, -87.370508;
+            39.568682, -87.370984;
+            39.568783, -87.371034];
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
+        lidarDataSetToUse ...
+            = 'INDOT_RoadShadow_US41_Loc_1_NAD83_PointCloud_NoiseExcluded';
     case 'INDOT_RoadShadow_Community_Loc_1'
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
@@ -272,6 +286,19 @@ simConfigs.localDatetimesToInspect = simConfigs.LOCAL_TIME_START ...
     :simConfigs.LOCAL_TIME_END;
 
 % The locations of interest to inspect.
+if isfield(simConfigs, 'LAT_LON_BOUNDARY_OF_INTEREST')
+    if isfield(simConfigs, 'UTM_X_Y_BOUNDARY_OF_INTEREST')
+        error(['Boundry of interest was set ', ...
+            'both in GPS (lat, lon) and UTM (x, y)!'])
+    else
+        [utmXsForBoundaryOfInterest, utmYsForBoundaryOfInterest] = ...
+            simConfigs.deg2utm_speZone( ...
+            simConfigs.LAT_LON_BOUNDARY_OF_INTEREST(:,1), ...
+            simConfigs.LAT_LON_BOUNDARY_OF_INTEREST(:,2));
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST = ...
+            [utmXsForBoundaryOfInterest, utmYsForBoundaryOfInterest];
+    end
+end
 flagGpsPtsOfInterestSpecified ...
     = isfield(simConfigs, 'LAT_LON_PTS_OF_INTEREST');
 flagAreaOfInterestSpecified ...
@@ -316,7 +343,7 @@ elseif flagAreaOfInterestSpecified
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1), ...
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
     if ~all(boolsGridPtsToKeep)
-        error(['Not all the grid points generated ', ...
+        warning(['Not all the grid points generated ', ...
             'are in the are of interest!']);
     end
     simConfigs.gridXYPts = [gridXs(boolsGridPtsToKeep), ...
@@ -445,6 +472,9 @@ else
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Done!'])
 end
+
+%% Simulation Overview Plot
+overviewGridOnMap;
 
 %% Simulation: Sunrise and Sunset Times
 
