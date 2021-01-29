@@ -160,11 +160,12 @@ else
                 
                 % Some sanity checks for the data set.
                 assert(contains(coordinateSystem, lower('NAD83')), ...
-                    ['Expecting CRS NAD83! (', R.ProjectedCRS.Name, ')']);
+                    ['Expecting CRS NAD83! (', ...
+                    convertStringsToChars(R.ProjectedCRS.Name), ')']);
                 % Check if this is a data set for Indiana.
                 assert(contains(coordinateSystem, lower('Indiana')), ...
                     ['Expecting Indiana data! (', ...
-                    R.ProjectedCRS.Name, ')']);
+                    convertStringsToChars(R.ProjectedCRS.Name), ')']);
                 
                 if contains(coordinateSystem, 'East','IgnoreCase', true)
                     % The State plane code for the Tippecanoe data.
