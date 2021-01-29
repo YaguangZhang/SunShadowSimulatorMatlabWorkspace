@@ -164,11 +164,11 @@ switch PRESET
         lidarDataSetToUse ...
             = 'INDOT_RoadShadow_US41_Loc_3_NAD83_PointCloud_NoiseExcluded';
     case 'INDOT_RoadShadow_US41_Loc_4'
-        simConfigs.LAT_LON_BOUNDARY_OF_INTEREST = [39.695320, -87.341380;
-            39.695619, -87.340831;
-            39.695548, -87.340760;
-            39.695235, -87.341339;
-            39.695320, -87.341380];
+        simConfigs.LAT_LON_BOUNDARY_OF_INTEREST = [39.695086, -87.341818;
+            39.695892, -87.340358;
+            39.695803, -87.340274;
+            39.695007, -87.341727;
+            39.695086, -87.341818];
         simConfigs.GRID_RESOLUTION_IN_M = 3;
         lidarDataSetToUse ...
             = 'INDOT_RoadShadow_US41_Loc_4_NAD83_PointCloud_NoiseExcluded';
