@@ -142,8 +142,8 @@ else
                 [lidarDataImg, R] = readgeoraster(curLidarFileAbsDir);
                 lidarDataImg(abs(lidarDataImg(:))>maxAllowedAbsLidarZ) ...
                     = nan;
-                % Reset samples with exact zero values. Regions with
-                % water seem to always have a z value of 0.
+                % Reset samples with exact zero values. Regions with water
+                % seem to always have a z value of 0.
                 lidarDataImg(lidarDataImg(:)==0) = -inf;
                 
                 [lidarRasterXLabels, lidarRasterYLabels] ...
@@ -160,10 +160,11 @@ else
                 
                 % Some sanity checks for the data set.
                 assert(contains(coordinateSystem, lower('NAD83')), ...
-                    'Expecting CRS NAD83!');                
+                    ['Expecting CRS NAD83! (', R.ProjectedCRS.Name, ')']);
                 % Check if this is a data set for Indiana.
                 assert(contains(coordinateSystem, lower('Indiana')), ...
-                    'Expecting Indiana data!');
+                    ['Expecting Indiana data! (', ...
+                    R.ProjectedCRS.Name, ')']);
                 
                 if contains(coordinateSystem, 'East','IgnoreCase', true)
                     % The State plane code for the Tippecanoe data.
