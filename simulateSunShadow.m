@@ -34,7 +34,7 @@ PRESET = 'PurdueMseeBuilding';
 %       https://lidar.jinha.org/
 % Set this to "IN_DSM_2019"/"IN_DSM_2019_DEMO" for the complete/a demo data
 % set.
-LIDAR_DATA_SET_TO_USE = 'IN_DSM_2019_DEMO';
+LIDAR_DATA_SET_TO_USE = 'IN_DSM_2019';
 
 % The absolute path to the folder for saving the results.
 folderToSaveResults = fullfile(ABS_PATH_TO_SHARED_FOLDER, ...
