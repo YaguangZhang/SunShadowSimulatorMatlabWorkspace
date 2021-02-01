@@ -246,15 +246,17 @@ else
                 % are being downloaded by other worker, we will try loading
                 % the data a few times.
                 numTrials = 0;
-                maxNumTrialsAllowed = 30;
-                timeToWaitBeforeTryAgainInS = 30;
+                maxNumTrialsAllowed = 3; % 30;
+                timeToWaitBeforeTryAgainInS = 0; % 30;
                 % Default directory to save USDA data.
                 usdaDataDir = 'usgsdata';
                 % Backup directory to store USDA data when the data in the
                 % default directory do not work (possibly because of the
                 % collision of workers trying to store the same data file
-                % at the same dir).
-                %	usdaDataBackupDir = 'usgsdata_backup';
+                % at the same dir). We will assign one folder for each
+                % worker to avoid any future collisions.
+                usdaDataBackupDir = fullfile('usgsdata_forEachWorker', ...
+                    ['worker_', num2str(labindex)]);
                 fctFetchRegion = @(latR, longR) ...
                     fetchregion(latR, longR, ...
                     'display', true, 'dataDir', usdaDataDir);
@@ -281,7 +283,7 @@ else
                                 'display', true, 'dataDir', usdaDataDir);
                         end
                         
-                        % usdaDataDir = usdaDataBackupDir;
+                        usdaDataDir = usdaDataBackupDir;
                         numTrials = numTrials+1;
                         warning(['Error fetching elevation info for ', ...
                             'file # ', num2str(idxF), '/', ...
