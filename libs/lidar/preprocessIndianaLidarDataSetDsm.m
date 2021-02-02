@@ -276,8 +276,13 @@ else
                         
                         if strcmpi(err.identifier, ...
                                 'MATLAB:subsassigndimmismatch')
-                            % A nasty workaround for a bug in the terrain
-                            % elevation libary.
+                            % A workaround for a bug in the terrain
+                            % elevation libary. Some downloaded tiles have
+                            % more data than what the raster needs.
+                            % Typically, if the size of the raster is m x
+                            % n, the data fetched could be (m+1) x (n+1).
+                            % We will only use m x n of the data fetched,
+                            % then.
                             fctFetchRegion = @(latR, longR) ...
                                 fetchAnomalyRegion(latR, longR, ...
                                 'display', true, 'dataDir', usdaDataDir);

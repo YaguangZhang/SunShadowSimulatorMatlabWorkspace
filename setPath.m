@@ -29,7 +29,15 @@ absPathLidarWinArtsy = ['D:\One Drive - Purdue\OneDrive - purdue.edu', ...
 absPathLidarLinuxCoverage = ['/home/coverage', ...
     '/CellCoverageMapper'];
 absPathLidarLinuxCoverageOnFrankie = ['/home/coverage/nvme/', ...
-    '/CellCoverageMapper/'];
+    '/CellCoverageMapper'];
+
+% Path to Indiana road data sets.
+absPathRoadsWinArtsy = ['D:\One Drive - Purdue\OneDrive - purdue.edu', ...
+    '\INDOT\Roads'];
+absPathRoadsLinuxCoverage = ['/home/coverage', ...
+    '/Roads'];
+absPathRoadsLinuxCoverageOnFrankie = ['/home/coverage/nvme/', ...
+    '/Roads'];
 
 % The absolute path to Python 3. Please make sure it is correct for the
 % machine to run this script.
@@ -53,16 +61,19 @@ switch strtrim(curHostname)
         % ZYG's lab desktop.
         ABS_PATH_TO_SHARED_FOLDER = absHomePathWinArtsy;
         ABS_PATH_TO_LIDAR = absPathLidarWinArtsy;
+        ABS_PATH_TO_ROADS = absPathRoadsWinArtsy;
         ABS_PATH_TO_PYTHON = absPythonPathWinArtsy;
     case 'coverage-compute-big'
         % The computer cluster at Purdue.
         ABS_PATH_TO_SHARED_FOLDER = absHomePathLinuxCoverage;
         ABS_PATH_TO_LIDAR = absPathLidarLinuxCoverage;
+        ABS_PATH_TO_ROADS = absPathRoadsLinuxCoverage;
         ABS_PATH_TO_PYTHON = absPythonPathLinuxCoverage;
     case 'ygzhang'
         % The virtual machine coverage on Purdue GPU cluster Frankie.
         ABS_PATH_TO_SHARED_FOLDER = absHomePathLinuxCoverageOnFrankie;
         ABS_PATH_TO_LIDAR = absPathLidarLinuxCoverageOnFrankie;
+        ABS_PATH_TO_ROADS = absPathRoadsLinuxCoverageOnFrankie;
         ABS_PATH_TO_PYTHON = absPythonPathLinuxCoverageOnFrankie;
     otherwise
         error(unknownComputerErrorId, unknownComputerErrorMsg);
