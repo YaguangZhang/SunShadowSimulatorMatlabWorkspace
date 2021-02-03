@@ -27,7 +27,7 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'Road_US41_Test';
+PRESET = 'PurdueMseeBuilding';
 
 %% Script Parameters
 
@@ -88,11 +88,11 @@ switch PRESET
             = constructUtmRectanglePolyMat(...
             [40.428530, -86.913961; 40.429744, -86.912143]);
         simConfigs.GRID_RESOLUTION_IN_M = 1.5;
-    case 'US41_Seg_Test_Loc_1'
+    case 'SR53_Seg_Test_Loc_3'
         %   - A test road segment on US 41.
-        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = constructRoadSeg('U-41');
-        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+        simConfigs.LAT_LON_BOUNDARY_OF_INTEREST ...
+            = constructUtmRoadSegPolygon({'U-41', 'U-41'}, [41.142108, -86.602631; 41.143345, -86.602473]);
+        simConfigs.GRID_RESOLUTION_IN_M = 1.5;    
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
 end
@@ -319,8 +319,8 @@ switch simConfigs.LIDAR_DATA_SET_TO_USE
             simConfigs.LIDAR_DATA_SET_TO_USE, '!'])
 end
 
-% Preprocess .img LiDAR data. To make Matlab R2019b work, we need to remove
-% preprocessIndianaLidarDataSet from path after things are done.
+% Preprocess .img/.tif LiDAR data. To make Matlab R2019b work, we need to
+% remove preprocessIndianaLidarDataSet from path after things are done.
 addpath(fullfile(pwd, 'libs', 'lidar'));
 [lidarFileRelDirs, lidarFileXYCoveragePolyshapes, ~] ...
     = preprocessIndianaLidarDataSetDsm(dirToLidarFiles, ...
@@ -331,15 +331,15 @@ lidarFileAbsDirs = cellfun(@(d) ...
     lidarFileRelDirs, 'UniformOutput', false);
 
 % Extra information on the LiDAR data set.
-%   - The overall boundry for the area covered by the LiDAR data set in
-%   UTM.
+%   - Overall boundry for the area covered by the LiDAR data set in UTM.
 lidarFilesXYCoveragePolyshape ...
     = mergePolygonsForAreaOfInterest(lidarFileXYCoveragePolyshapes, 1);
 %   - Centroids for the LiDAR files in UTM.
 lidarFileXYCentroids ...
     = extractCentroidsFrom2DPolyCell(lidarFileXYCoveragePolyshapes);
 %   - The .mat copies for the LiDAR data.
-lidarMatFileAbsDirs = cellfun(@(d) regexprep(d, '\.img$', '.mat'), ...
+lidarMatFileAbsDirs = cellfun( ...
+    @(d) regexprep(d, '\.(img|tif)$', '.mat'), ...
     lidarFileAbsDirs, 'UniformOutput', false);
 
 %% Simulation: Initialization
