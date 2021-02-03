@@ -14,7 +14,9 @@
 %
 % Yaguang Zhang, Purdue, 11/24/2020
 
-clear; clc; close all; dbstop if error;
+% Avoid clearing big static variables.
+clearvars -except indotRoads; 
+clc; close all; dbstop if error;
 
 % Locate the Matlab workspace and save the current filename.
 cd(fileparts(mfilename('fullpath'))); addpath('libs');
@@ -25,7 +27,7 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'PurdueMseeBuilding';
+PRESET = 'Road_US41_Test';
 
 %% Script Parameters
 
@@ -85,6 +87,11 @@ switch PRESET
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
             [40.428530, -86.913961; 40.429744, -86.912143]);
+        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+    case 'US41_Seg_Test_Loc_1'
+        %   - A test road segment on US 41.
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructRoadSeg('U-41');
         simConfigs.GRID_RESOLUTION_IN_M = 1.5;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])

@@ -1,23 +1,5 @@
 %LOADINDOTROADS Loads INDOT's road structure.
 %
-% An example of the road structure:
-%
-%     >> indotRoads(1)
-%
-%     ans =
-%
-%            Geometry: 'Line'
-%         BoundingBox: [2x2 double]
-%                   X: [5.8703e+05 5.8714e+05 5.8751e+05 NaN] Y:
-%                   [4.4125e+06 4.4125e+06 4.4128e+06 NaN]
-%                  ID: 1014653
-%              LENGTH: 0.3600
-%                 DIR: 0
-%                  CO: 49
-%                CODE: 'U'
-%            RTE_NAME: '49-U-036-0-02'
-%               LANES: 2
-%
 % Note that this structure doesn't contain the geographical coordinates we
 % need for plotting it on a map (X and Y are easting and northing used in
 % UTM system). So this script also compute and add the coordinates fields
@@ -41,7 +23,7 @@
 % the results being cached in .mat file.
 flagSaveResultsToMat = true;
 
-nameFoler = 'Streets_Centerlines_IGIO_2020';
+nameFoler = 'Streets_Centerlines_IGIO_2019';
 nameFile = 'Export_Output';
 
 disp('-------------------------------------------------------------')
@@ -68,9 +50,9 @@ if ~exist('indotRoads', 'var')
         disp('-------------------------------------------------------------')
         disp('Pre-processing: Loading the INDOT road structure from history mat file...')
         tic;
-        flagSuccess = readBigVector(pathShapeMatFile); 
+        flagSuccess = readBigVector(pathShapeMatFile);
         assert(flagSuccess, ...
-                'Error in reading the road info as a big vector!');
+            'Error in reading the road info as a big vector!');
         toc;
         disp('Pre-processing: Done!')
     else
@@ -103,7 +85,7 @@ if ~exist('indotRoads', 'var')
             disp('Pre-processing: Saving the INDOT road structure in to a mat file...')
             
             tic;
-            flagSuccess = saveBigVector(pathShapeMatFile, indotRoads);            
+            flagSuccess = saveBigVector(pathShapeMatFile, indotRoads);
             assert(flagSuccess, ...
                 'Error in saving the road info as a big vector!');
             toc;
