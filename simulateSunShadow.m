@@ -89,10 +89,15 @@ switch PRESET
             [40.428530, -86.913961; 40.429744, -86.912143]);
         simConfigs.GRID_RESOLUTION_IN_M = 1.5;
     case 'SR53_Seg_Test_Loc_3'
-        %   - A test road segment on US 41.
-        simConfigs.LAT_LON_BOUNDARY_OF_INTEREST ...
-            = constructUtmRoadSegPolygon({'U-41', 'U-41'}, [41.142108, -86.602631; 41.143345, -86.602473]);
+        %   - A test road segment on SR 53.
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRoadSegPolygon({'Broadway', 'U41'}, []);
         simConfigs.GRID_RESOLUTION_IN_M = 1.5;    
+    case 'US41_Seg_Test_Loc_1'
+        %   - A test road segment on US 41.
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructRoadSegPolygon('U41', []);
+        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
 end
@@ -337,10 +342,15 @@ lidarFilesXYCoveragePolyshape ...
 %   - Centroids for the LiDAR files in UTM.
 lidarFileXYCentroids ...
     = extractCentroidsFrom2DPolyCell(lidarFileXYCoveragePolyshapes);
-%   - The .mat copies for the LiDAR data.
-lidarMatFileAbsDirs = cellfun( ...
-    @(d) regexprep(d, '\.(img|tif)$', '.mat'), ...
-    lidarFileAbsDirs, 'UniformOutput', false);
+%   - The .mat copies for the LiDAR data. For the 2019 dataset, they are
+%   stored in a cache folder.
+lidarMatFileAbsDirs = lidarFileAbsDirs;
+for idxMatF = 1:length(lidarMatFileAbsDirs)
+    [lidarMatFPath, lidarMatFName, ~] ...
+        = fileparts(lidarMatFileAbsDirs{idxMatF});
+    lidarMatFileAbsDirs{idxMatF} = fullfile(lidarMatFPath, '..', ... 
+        'MatlabCache', [lidarMatFName, '.mat']);
+end
 
 %% Simulation: Initialization
 
