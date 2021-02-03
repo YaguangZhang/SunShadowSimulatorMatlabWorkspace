@@ -1,4 +1,4 @@
-RoadToShow = 'S53'; % S53, U41, I69, S161,S66
+RoadToShow = 'S53'; % S53, U41, I69, S161, S66
 
 if ~exist('indotMileMarkers','var')
     loadIndotMileMarkers;
@@ -26,7 +26,7 @@ plot([highWaySegmentsSelected.Lon], [highWaySegmentsSelected.Lat], ...
     'b-', 'LineWidth', 3);
 
 
-% For analyzing mile markers on S161. 
+% For analyzing mile markers on S161.
 
 % mileMarkersSelected = getMileMarkersByRoadName('S161',indotMileMarkers);
 % highWaySegmentsSelected = getHighwaySegsByRoadName('S161',indotHighways);
@@ -36,7 +36,7 @@ plot([highWaySegmentsSelected.Lon], [highWaySegmentsSelected.Lat], ...
 %         mileMarkersSelected(idx).IIT_NOTE);
 % end
 % plot([highWaySegmentsSelected.Lon], [highWaySegmentsSelected.Lat]);
-% 
+%
 % mileMarkersRef = getMileMarkersByRoadName('S66',indotMileMarkers);
 % highWaySegmentsRef = getHighwaySegsByRoadName('S66',indotHighways);
 % for idx = 1:length(mileMarkersRef)

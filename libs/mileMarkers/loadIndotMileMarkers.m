@@ -46,8 +46,8 @@ pathShapeMatFile = fullfile(ABS_PATH_TO_ROADS, ...
 
 if ~exist('UTM_STRUCT', 'var')
     % Create a UTM structure with UTM_Zone_Number to be 16 (northern
-    % hemisphere). UTM_Zone_Number can be got from the INDOT highway
-    % document.
+    % hemisphere). UTM_Zone_Number (and the projection parameters) can be
+    % got from the INDOT mile marker document.
     UTM_STRUCT = defaultm('utm');
     UTM_STRUCT.zone = '16N';
     % Create a map projection structure.

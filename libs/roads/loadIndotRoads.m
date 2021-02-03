@@ -34,14 +34,14 @@ pathShapeFile = fullfile(ABS_PATH_TO_ROADS, nameFoler, ...
 pathShapeMatFile = fullfile(ABS_PATH_TO_ROADS, nameFoler, ...
     strcat(nameFile, '.mat'));
 
-if ~exist('ROAD_UTM_STRUCT', 'var')
+if ~exist('UTM_STRUCT', 'var')
     % Create a UTM structure with UTM_Zone_Number to be 16 (northern
     % hemisphere). UTM_Zone_Number (and the projection parameters) can be
     % got from the INDOT road document.
-    ROAD_UTM_STRUCT = defaultm('utm');
-    ROAD_UTM_STRUCT.zone = '16N';
+    UTM_STRUCT = defaultm('utm');
+    UTM_STRUCT.zone = '16N';
     % Create a map projection structure.
-    ROAD_UTM_STRUCT = defaultm(ROAD_UTM_STRUCT);
+    UTM_STRUCT = defaultm(UTM_STRUCT);
 end
 
 if ~exist('indotRoads', 'var')
@@ -72,7 +72,7 @@ if ~exist('indotRoads', 'var')
         for idxRoad = 1:1:length(indotRoads)
             [indotRoads(idxRoad).Lat, ...
                 indotRoads(idxRoad).Lon] = ...
-                minvtran(ROAD_UTM_STRUCT, ...
+                minvtran(UTM_STRUCT, ...
                 indotRoads(idxRoad).X, ...
                 indotRoads(idxRoad).Y ...
                 );
