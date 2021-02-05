@@ -34,6 +34,8 @@ pathShapeFile = fullfile(ABS_PATH_TO_ROADS, nameFoler, ...
 pathShapeMatFile = fullfile(ABS_PATH_TO_ROADS, nameFoler, ...
     strcat(nameFile, '.mat'));
 
+% Note: we are assuming the UTM struct is the same for both roads and
+% milemarkers.
 if ~exist('UTM_STRUCT', 'var')
     % Create a UTM structure with UTM_Zone_Number to be 16 (northern
     % hemisphere). UTM_Zone_Number (and the projection parameters) can be

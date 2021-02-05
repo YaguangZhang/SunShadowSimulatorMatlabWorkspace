@@ -57,8 +57,7 @@ mile = nan;
 % First, we need to know the name of the road we are on.
 
 % Find the nearest road segment(s).
-[nearestSegs, nearestDist] = findNearestRoadSeg(X, Y, indotRoads, ...
-    0);
+nearestSegs = findNearestRoadSeg(X, Y, indotRoads, 0);
 
 % If no nearest road segment is found, print an error.
 if isempty(nearestSegs)

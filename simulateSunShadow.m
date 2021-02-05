@@ -91,7 +91,7 @@ switch PRESET
     case 'SR53_Seg_Test_Loc_3'
         %   - A test road segment on SR 53.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = constructUtmRoadSegPolygon({'Broadway', 'U41'}, []);
+            = constructUtmRoadSegPolygon({'Broadway', 'S53'}, []);
         simConfigs.GRID_RESOLUTION_IN_M = 1.5;    
     case 'US41_Seg_Test_Loc_1'
         %   - A test road segment on US 41.

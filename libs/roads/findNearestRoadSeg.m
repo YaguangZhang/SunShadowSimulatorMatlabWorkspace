@@ -1,4 +1,5 @@
-function [nearestSegs, nearestDist] = findNearestRoadSeg(X, Y, ...
+function [nearestSegs, nearestDist] ...
+    = findNearestRoadSeg(X, Y, ...
     indotRoads, flagPlotResults)
 % FINDNEARESTROADSEG Find the nearest road segment to the input
 % point.
@@ -19,7 +20,7 @@ function [nearestSegs, nearestDist] = findNearestRoadSeg(X, Y, ...
 %     vertices and bounding boxes for the nearby road segments.
 %
 % Outputs:
-%   - roadSegs
+%   - nearestSegs
 %     The road segments found.
 %
 % Yaguang Zhang, Purdue, 02/03/2020
