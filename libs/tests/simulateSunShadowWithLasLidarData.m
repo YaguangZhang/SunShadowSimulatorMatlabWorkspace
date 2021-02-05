@@ -866,7 +866,7 @@ disp(['        [', datestr(now, datetimeFormat), ...
     '] Generating illustration video clip for shadow location ...'])
 
 timeToPauseForFigUpdateInS = 0.001;
-pathToSaveVideo = fullfile(folderToSaveResults, 'shadowLocOverTime.mp4');
+pathToSaveVideo = fullfile(folderToSaveResults, 'shadowLocOverTime');
 
 % Video parameters.
 simTimeLengthPerFrameInS = simConfigs.PLAYBACK_SPEED/simConfigs.FRAME_RATE;
@@ -886,7 +886,7 @@ drawnow; pause(timeToPauseForFigUpdateInS);
 
 % Create a video writer for outputting the frames.
 curVideoWriter = VideoWriter( ...
-    pathToSaveVideo, 'MPEG-4');
+    pathToSaveVideo, 'Motion JPEG 2000');
 curVideoWriter.FrameRate = simConfigs.FRAME_RATE;
 open(curVideoWriter);
 
