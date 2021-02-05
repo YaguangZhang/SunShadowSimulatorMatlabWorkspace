@@ -27,7 +27,7 @@ prepareSimulationEnv;
 % Change PRESET to run the simulator for different locations/areas of
 % interest. Please refer to the Simulation Configurations section for the
 % supported presets.
-PRESET = 'PurdueMseeBuilding';
+PRESET = 'US41_Seg_Test_Loc_1';
 
 %% Script Parameters
 
@@ -91,13 +91,17 @@ switch PRESET
     case 'SR53_Seg_Test_Loc_3'
         %   - A test road segment on SR 53.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = constructUtmRoadSegPolygon({'Broadway', 'S53'}, []);
-        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+            = constructUtmRoadSegPolygon({'Broadway', 'S53'}, ...
+            {[39.791532, -87.236069], [39.792541, -87.235928]}, ...
+            {[39.792553, -87.236054], [39.791528, -87.235930]});
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
     case 'US41_Seg_Test_Loc_1'
         %   - A test road segment on US 41.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = constructRoadSegPolygon('U41', []);
-        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+            = constructRoadSegPolygon('U41', ...
+            {[39.568661, -87.370987], [39.568775, -87.371052]}, ...
+            {[39.569680, -87.369670], [39.569637, -87.369539]});
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
 end
