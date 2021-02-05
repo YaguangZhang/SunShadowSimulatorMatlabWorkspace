@@ -15,7 +15,7 @@
 % Yaguang Zhang, Purdue, 11/24/2020
 
 % Avoid clearing big static variables.
-clearvars -except indotRoads; 
+clearvars -except indotRoads;
 clc; close all; dbstop if error;
 
 % Locate the Matlab workspace and save the current filename.
@@ -92,7 +92,7 @@ switch PRESET
         %   - A test road segment on SR 53.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRoadSegPolygon({'Broadway', 'S53'}, []);
-        simConfigs.GRID_RESOLUTION_IN_M = 1.5;    
+        simConfigs.GRID_RESOLUTION_IN_M = 1.5;
     case 'US41_Seg_Test_Loc_1'
         %   - A test road segment on US 41.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
@@ -348,7 +348,7 @@ lidarMatFileAbsDirs = lidarFileAbsDirs;
 for idxMatF = 1:length(lidarMatFileAbsDirs)
     [lidarMatFPath, lidarMatFName, ~] ...
         = fileparts(lidarMatFileAbsDirs{idxMatF});
-    lidarMatFileAbsDirs{idxMatF} = fullfile(lidarMatFPath, '..', ... 
+    lidarMatFileAbsDirs{idxMatF} = fullfile(lidarMatFPath, '..', ...
         'MatlabCache', [lidarMatFName, '.mat']);
 end
 
@@ -431,7 +431,7 @@ else
     
     % Generate a history file. Note that the simConfigs saved now contains
     % information derived from the parameters set by the users.
-    save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
+    save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3', '-append');
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Done!'])
 end
@@ -582,7 +582,7 @@ for idxDay = 1:totalNumOfDays
             % necessary. Note that this attempt may miss the last save
             % required when all locations are processed.
             if flagSimStateUpdated
-                save(dirToSaveSimState, 'simState', '-v7.3');
+                save(dirToSaveSimState, 'simState', '-v7.3', '-append');
                 flagSimStateUpdated = false;
             end
             
@@ -600,7 +600,7 @@ for idxDay = 1:totalNumOfDays
             % Also take the chance to update the history results if
             % necessary.
             if flagSimStateUpdated
-                save(dirToSaveSimState, 'simState', '-v7.3');
+                save(dirToSaveSimState, 'simState', '-v7.3', '-append');
                 flagSimStateUpdated = false;
             end
             
@@ -754,13 +754,13 @@ for idxLoc = indicesLocToProcess
             > simConfigs.MIN_PROGRESS_RATIO_TO_REPORT*totalNumOfDays
         curNumOfLocTimePairsProcessed = 0;
         % Also take the chance to update the history results.
-        save(dirToSaveSimState, 'simState', '-v7.3');
+        save(dirToSaveSimState, 'simState', '-v7.3', '-append');
     end
     
     if numOfLocTimePairsProcessed == totalNumOfLocTimePairs
         % All done. Save the results.
         simState.flagShadowLocated = true;
-        save(dirToSaveSimState, 'simState', '-v7.3');
+        save(dirToSaveSimState, 'simState', '-v7.3', '-append');
         disp(['            [', ...
             datestr(now, datetimeFormat), '] Done!'])
     end
@@ -865,6 +865,14 @@ disp(['        [', datestr(now, datetimeFormat), ...
 disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
 %% Cleanup
+
+% Update the simulation results in the history .mat file, just in case.
+disp(' ')
+disp(['        [', datestr(now, datetimeFormat), ...
+    '] Finishing simulation ...'])
+save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3', '-append');
+disp(['        [', datestr(now, datetimeFormat), ...
+    '] Done!'])
 
 diary off;
 
