@@ -1,19 +1,26 @@
 %LOADINDOTROADS Loads INDOT's road structure.
 %
-% Note that this structure doesn't contain the geographical coordinates we
-% need for plotting it on a map (X and Y are easting and northing used in
-% UTM system). So this script also compute and add the coordinates fields
-% to this structure.
+% Note that this structure doesn't contain the GPS coordinates we need for
+% plotting it on a map (X and Y are easting and northing used in UTM
+% system). So this script also compute and add the coordinates fields to
+% this structure.
 %
 % References:
 %
 %   http://www.mathworks.com/help/map/working-with-the-utm-system.html
 %
-%   https://maps.indiana.edu/metadata/Infrastructure/Streets_Roads_INDOT_2015.html
+%   https://maps.indiana.edu/metadata/Infrastructure/Streets_Centerlines_IGIO.html
 %
 % The detailed info, for example the unit, for each field can be found at
-% the IU link above. Note that LENGTH is in miles, and RTE_NAME means
-% "route name".
+% the IU link above.
+%
+% If the data are stored as shape type PolyLineZ (type code = 13) or shape
+% type PointM (type code = 21), one will need to convert them to something
+% Matlab supports (by disabling Z and M fields) or use the m_map library.
+%
+%   https://www.eoas.ubc.ca/~rich/map.html
+%
+%   https://gis.stackexchange.com/questions/40613/importing-shapefile-in-matlab
 %
 % Yaguang Zhang, Purdue, 02/02/2021
 
@@ -34,16 +41,9 @@ pathShapeFile = fullfile(ABS_PATH_TO_ROADS, nameFoler, ...
 pathShapeMatFile = fullfile(ABS_PATH_TO_ROADS, nameFoler, ...
     strcat(nameFile, '.mat'));
 
-% Note: we are assuming the UTM struct is the same for both roads and
-% milemarkers.
-if ~exist('UTM_STRUCT', 'var')
-    % Create a UTM structure with UTM_Zone_Number to be 16 (northern
-    % hemisphere). UTM_Zone_Number (and the projection parameters) can be
-    % got from the INDOT road document.
-    UTM_STRUCT = defaultm('utm');
-    UTM_STRUCT.zone = '16N';
-    % Create a map projection structure.
-    UTM_STRUCT = defaultm(UTM_STRUCT);
+if ~exist('ROAD_PROJ', 'var')
+    mileMarkerShpInfo = shapeinfo(pathShapeFile);
+    ROAD_PROJ = mileMarkerShpInfo.CoordinateReferenceSystem;
 end
 
 if ~exist('indotRoads', 'var')
@@ -68,18 +68,30 @@ if ~exist('indotRoads', 'var')
         
         disp(' ')
         disp('Pre-processing: Computing geographical coordinates...')
-        tic;
         
         % Compute the Lat and Lon fields for the road structure.
+        tic;
+        [indotRoadsLats, indotRoadsLons] ...
+            = projinv(ROAD_PROJ, ...
+            [indotRoads.X]', ...
+            [indotRoads.Y]' ...
+            );
+        indotRoadsPtCnt = 1;
         for idxRoad = 1:1:length(indotRoads)
-            [indotRoads(idxRoad).Lat, ...
-                indotRoads(idxRoad).Lon] = ...
-                minvtran(UTM_STRUCT, ...
-                indotRoads(idxRoad).X, ...
-                indotRoads(idxRoad).Y ...
-                );
+            % By our convention, we will use column vectors for the
+            % coordinates.
+            indotRoads(idxRoad).X = indotRoads(idxRoad).X';
+            indotRoads(idxRoad).Y = indotRoads(idxRoad).Y';
+            
+            curIndotRoadPtNum = length(indotRoads(idxRoad).X);
+            indotRoads(idxRoad).Lat = indotRoadsLats( ...
+                indotRoadsPtCnt:(indotRoadsPtCnt+curIndotRoadPtNum-1));
+            indotRoads(idxRoad).Lon = indotRoadsLons( ...
+                indotRoadsPtCnt:(indotRoadsPtCnt+curIndotRoadPtNum-1));
+            indotRoadsPtCnt = indotRoadsPtCnt+curIndotRoadPtNum;
         end
         toc;
+        
         disp('Pre-processing: Done!')
         
         if flagSaveResultsToMat

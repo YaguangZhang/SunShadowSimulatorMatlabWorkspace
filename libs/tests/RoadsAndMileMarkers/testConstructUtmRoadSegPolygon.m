@@ -1,3 +1,7 @@
+% TESTCONSTRUCTUTMROADSEGPOLYGON
+%
+% Yaguang Zhang, Purdue, 02/03/2021
+
 clc; close all;
 dbstop if error;
 
@@ -9,16 +13,9 @@ curFileName = mfilename;
 prepareSimulationEnv;
 
 simConfigs.UTM_ZONE = '16 T';
-% Convert GPS degrees to UTM coordinates for the specified zone.
-utmstruct_speZone = defaultm('utm');
-% Remove white space in the zone label.
-utmstruct_speZone.zone ...
-    = simConfigs.UTM_ZONE(~isspace(simConfigs.UTM_ZONE));
-utmstruct_speZone.geoid = wgs84Ellipsoid;
-utmstruct_speZone = defaultm(utmstruct_speZone);
-
-deg2utm_speZone = @(lat, lon) mfwdtran(utmstruct_speZone, lat,lon);
-utm2deg_speZone = @(x, y) minvtran(utmstruct_speZone, x, y);
+% For GPS and UTM conversions.
+[deg2utm_speZone, utm2deg_speZone] ...
+    = genUtmConvertersForFixedZone(simConfigs.UTM_ZONE);
 
 % Store these functions in simConfigs.
 simConfigs.deg2utm_speZone = deg2utm_speZone;
@@ -41,13 +38,14 @@ latLonEndPtsMat = vertcat(latLonEndPts{:});
 [latLonEndXs, latLonEndYs] = deg2utm_speZone( ...
     latLonEndPtsMat(:,1), latLonEndPtsMat(:,2));
 figure; hold on;
-plot(utmRoadSegPoly);
+plot(polyshape(utmRoadSegPoly));
 hS = plot(latLonStartXs, latLonStartYs, 'rx');
 hE = plot(latLonEndXs, latLonEndYs, 'bo');
+axis equal;
 legend([hS, hE], 'Start Pts', 'End Pts');
 
 [roadSegPolyLats, roadSegPolyLons] = utm2deg_speZone( ...
-    utmRoadSegPoly.Vertices(:,1), utmRoadSegPoly.Vertices(:,2));
+    utmRoadSegPoly(:,1), utmRoadSegPoly(:,2));
 lonLatRoadSegPoly = polyshape(roadSegPolyLons, roadSegPolyLats);
 figure; hold on;
 plot(lonLatRoadSegPoly);
@@ -55,3 +53,5 @@ hS = plot(latLonStartPtsMat(:,2), latLonStartPtsMat(:,1), 'rx');
 hE = plot(latLonEndPtsMat(:,2), latLonEndPtsMat(:,1), 'bo');
 legend([hS, hE], 'Start Pts', 'End Pts');
 plot_google_map('MapType', 'hybrid');
+
+% EOF

@@ -30,10 +30,8 @@ end
 % Test speed using the first sample.
 disp('Time for computing one sample without INDOT_MILE_MARKERS_ROADNAME_LABELS:');
 tic;
-[mile1, INDOT_MILE_MARKERS_ROADNAME_LABELS] = ...
-    gpsCoorWithRoadName2MileMarker(...
-    lati(1), long(1), roadName{1},...
-    indotMileMarkers, UTM_STRUCT);
+mile1 = gpsCoorWithRoadName2MileMarker(...
+    lati(1), long(1), roadName{1});
 toc;
 
 disp(' ');
@@ -41,9 +39,7 @@ disp('Time for computing one sample with INDOT_MILE_MARKERS_ROADNAME_LABELS:');
 disp('    (The speed should be much faster.)')
 tic;
 mile2 = gpsCoorWithRoadName2MileMarker(...
-    lati(1), long(1), roadName{1}, ...
-    indotMileMarkers, UTM_STRUCT, ...
-    INDOT_MILE_MARKERS_ROADNAME_LABELS);
+    lati(1), long(1), roadName{1});
 toc;
 
 disp(' ');
@@ -54,9 +50,7 @@ numSampels = length(lati);
 mileSamples = nan(numSampels,1);
 for idx = 1:numSampels
     mileSamples(idx) = gpsCoorWithRoadName2MileMarker(...
-        lati(idx), long(idx), roadName{idx}, ...
-        indotMileMarkers, UTM_STRUCT, ...
-        INDOT_MILE_MARKERS_ROADNAME_LABELS, true, correctMile(idx));
+        lati(idx), long(idx), roadName{idx}, true, correctMile(idx));
 end
 toc
 

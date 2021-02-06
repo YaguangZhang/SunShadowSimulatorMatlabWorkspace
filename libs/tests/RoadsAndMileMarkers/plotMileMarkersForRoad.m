@@ -1,10 +1,14 @@
-RoadToShow = 'S53'; % S53, U41, I69, S161, S66
+% PLOTMILEMARKERSFORROAD
+%
+% Yaguang Zhang, Purdue, 02/03/2021
+
+RoadToShow = 'U41'; % S53 (Broadway), U41, I69, S161, S66
 
 if ~exist('indotMileMarkers','var')
     loadIndotMileMarkers;
 end
 
-if ~exist('indotHighways','var')
+if ~exist('indotRoads','var')
     loadIndotRoads;
 end
 
@@ -22,30 +26,11 @@ for idx = 1:length(mileMarkersSelected)
     text(mileMarkersSelected(idx).Lon, mileMarkersSelected(idx).Lat, ...
         mileMarkersSelected(idx).POST_NAME, 'Interpreter', 'none');
 end
-plot([highWaySegmentsSelected.Lon], [highWaySegmentsSelected.Lat], ...
+plot(vertcat(highWaySegmentsSelected.Lon), ...
+    vertcat(highWaySegmentsSelected.Lat), ...
     'b-', 'LineWidth', 3);
 
-
-% For analyzing mile markers on S161.
-
-% mileMarkersSelected = getMileMarkersByRoadName('S161',indotMileMarkers);
-% highWaySegmentsSelected = getHighwaySegsByRoadName('S161',indotHighways);
-% for idx = 1:length(mileMarkersSelected)
-%     plot(mileMarkersSelected(idx).Lon, mileMarkersSelected(idx).Lat,'ob');
-%     text(mileMarkersSelected(idx).Lon, mileMarkersSelected(idx).Lat, ...
-%         mileMarkersSelected(idx).IIT_NOTE);
-% end
-% plot([highWaySegmentsSelected.Lon], [highWaySegmentsSelected.Lat]);
-%
-% mileMarkersRef = getMileMarkersByRoadName('S66',indotMileMarkers);
-% highWaySegmentsRef = getHighwaySegsByRoadName('S66',indotHighways);
-% for idx = 1:length(mileMarkersRef)
-%     plot(mileMarkersRef(idx).Lon, mileMarkersRef(idx).Lat,'xr');
-%     text(mileMarkersRef(idx).Lon, mileMarkersRef(idx).Lat, ...
-%         mileMarkersRef(idx).IIT_NOTE);
-% end
-% plot([highWaySegmentsRef.Lon], [highWaySegmentsRef.Lat]);
-
 hold off;
-
 plot_google_map('MapType', 'roadmap');
+
+% EOF

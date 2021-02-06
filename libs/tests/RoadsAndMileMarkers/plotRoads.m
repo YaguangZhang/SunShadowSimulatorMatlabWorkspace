@@ -1,13 +1,13 @@
+% PLOTROADS
+%
+% Yaguang Zhang, Purdue, 02/03/2021
+
 if ~exist('indotMileMarkers','var')
     loadIndotMileMarkers;
 end
 
 if ~exist('indotRoads','var')
     loadIndotRoads;
-    [~, ~, INDOT_MILE_MARKERS_ROADNAME_LABELS] = ...
-        gpsCoor2MileMarker(0, 0, ...
-        indotMileMarkers, indotRoads, UTM_STRUCT);
-    putvar(indotMileMarkers, UTM_STRUCT, INDOT_MILE_MARKERS_ROADNAME_LABELS);
 end
 
 close all;
@@ -38,3 +38,5 @@ for idxRoad = 1:length(uniqueRoadNames)
     pause;
     clf;
 end
+
+% EOF
