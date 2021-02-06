@@ -89,18 +89,26 @@ switch PRESET
             [40.428530, -86.913961; 40.429744, -86.912143]);
         simConfigs.GRID_RESOLUTION_IN_M = 1.5;
     case 'SR53_Seg_Test_Loc_3'
-        %   - A test road segment on SR 53.
+        %   - A test road segment on SR 53. To save the execution time in
+        %   the user setting section, we will here cache the command for
+        %   generating this field and execute it in the configuration
+        %   section.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = constructUtmRoadSegPolygon({'Broadway', 'S53'}, ...
-            {[39.791532, -87.236069], [39.792541, -87.235928]}, ...
-            {[39.792553, -87.236054], [39.791528, -87.235930]});
+            = strcat( ...
+            "constructUtmRoadSegPolygon({'Broadway','S53'},", ...
+            "{[39.791532,-87.236069],[39.792541,-87.235928]},", ...
+            "{[39.792553,-87.236054],[39.791528,-87.235930]});");
         simConfigs.GRID_RESOLUTION_IN_M = 3;
     case 'US41_Seg_Test_Loc_1'
-        %   - A test road segment on US 41.
+        %   - A test road segment on US 41. To save the execution time of
+        %   the user setting section, we will here cache the command for
+        %   generating this field and execute it in the configuration
+        %   section.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = constructRoadSegPolygon('U41', ...
-            {[39.568661, -87.370987], [39.568775, -87.371052]}, ...
-            {[39.569680, -87.369670], [39.569637, -87.369539]});
+            = strcat( ...
+            "constructUtmRoadSegPolygon('U41',", ...
+            "{[39.568661, -87.370987],[39.568775, -87.371052]},", ...
+            "{[39.569680, -87.369670],[39.569637, -87.369539]});");
         simConfigs.GRID_RESOLUTION_IN_M = 3;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
@@ -200,7 +208,7 @@ if exist(dirToSaveSimConfigs, 'file')
         '] Loading history simConfigs ...'])
     histSimConfigs = load(dirToSaveSimConfigs);
     if ~isequaln(histSimConfigs.simConfigs, simConfigs)
-        error(['[        ', datestr(now, datetimeFormat), ...
+        error(['        [', datestr(now, datetimeFormat), ...
             '] The settings for this PRESET have changed!']);
     end
 else
@@ -209,104 +217,121 @@ else
     save(dirToSaveSimConfigs, 'simConfigs', '-v7.3');
 end
 
-% Pre-assign LIDAR_DATA_SET_TO_USE based on the user's settings. We will
-% verify this value later.
-simConfigs.LIDAR_DATA_SET_TO_USE = LIDAR_DATA_SET_TO_USE;
+% The location for saving history results of simState and the extended
+% version of simConfigs, just in case any interruption happens.
+dirToSaveSimState = fullfile(folderToSaveResults, 'simState.mat');
 
-% Convert GPS degrees to UTM coordinates for the specified zone.
-utmstruct_speZone = defaultm('utm');
-% Remove white space in the zone label.
-utmstruct_speZone.zone ...
-    = simConfigs.UTM_ZONE(~isspace(simConfigs.UTM_ZONE));
-utmstruct_speZone.geoid = wgs84Ellipsoid;
-utmstruct_speZone = defaultm(utmstruct_speZone);
+% For GPS and UTM conversions.
+[deg2utm_speZone, utm2deg_speZone] ...
+    = genUtmConvertersForFixedZone(simConfigs.UTM_ZONE);
 
-deg2utm_speZone = @(lat, lon) mfwdtran(utmstruct_speZone, lat,lon);
-utm2deg_speZone = @(x, y) minvtran(utmstruct_speZone, x, y);
-
-% Store these functions in simConfigs.
-simConfigs.deg2utm_speZone = deg2utm_speZone;
-simConfigs.utm2deg_speZone = utm2deg_speZone;
-
-% The time zone to use for the observer is derived from the UTM zone.
-[~, zoneCenterLon] = simConfigs.utm2deg_speZone(500000,0);
-simConfigs.timezone = -timezone(zoneCenterLon);
-
-% The local datetimes to inspect.
-simConfigs.localDatetimesToInspect = simConfigs.LOCAL_TIME_START ...
-    :minutes(simConfigs.TIME_INTERVAL_IN_M) ...
-    :simConfigs.LOCAL_TIME_END;
-
-% The locations of interest to inspect.
-if isfield(simConfigs, 'LAT_LON_BOUNDARY_OF_INTEREST')
-    if isfield(simConfigs, 'UTM_X_Y_BOUNDARY_OF_INTEREST')
-        error(['Boundry of interest was set ', ...
-            'both in GPS (lat, lon) and UTM (x, y)!'])
-    else
-        [utmXsForBoundaryOfInterest, utmYsForBoundaryOfInterest] = ...
-            simConfigs.deg2utm_speZone( ...
-            simConfigs.LAT_LON_BOUNDARY_OF_INTEREST(:,1), ...
-            simConfigs.LAT_LON_BOUNDARY_OF_INTEREST(:,2));
-        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST = ...
-            [utmXsForBoundaryOfInterest, utmYsForBoundaryOfInterest];
+if exist(dirToSaveSimState, 'file')
+    load(dirToSaveSimState, 'simConfigs');
+else
+    % Pre-assign LIDAR_DATA_SET_TO_USE based on the user's settings. We
+    % will verify this value later.
+    simConfigs.LIDAR_DATA_SET_TO_USE = LIDAR_DATA_SET_TO_USE;
+    
+    % Store these functions in simConfigs.
+    simConfigs.deg2utm_speZone = deg2utm_speZone;
+    simConfigs.utm2deg_speZone = utm2deg_speZone;
+    
+    % The time zone to use for the observer is derived from the UTM zone.
+    [~, zoneCenterLon] = simConfigs.utm2deg_speZone(500000,0);
+    simConfigs.timezone = -timezone(zoneCenterLon);
+    
+    % The local datetimes to inspect.
+    simConfigs.localDatetimesToInspect = simConfigs.LOCAL_TIME_START ...
+        :minutes(simConfigs.TIME_INTERVAL_IN_M) ...
+        :simConfigs.LOCAL_TIME_END;
+    
+    % The locations of interest to inspect.
+    if isfield(simConfigs, 'LAT_LON_BOUNDARY_OF_INTEREST')
+        if isfield(simConfigs, 'UTM_X_Y_BOUNDARY_OF_INTEREST')
+            error(['Boundry of interest was set ', ...
+                'both in GPS (lat, lon) and UTM (x, y)!'])
+        else
+            disp(['        [', datestr(now, datetimeFormat), ...
+                '] Converting LAT_LON_BOUNDARY_OF_INTEREST to ', ...
+                'UTM_X_Y_BOUNDARY_OF_INTEREST ...'])
+            [utmXsForBoundaryOfInterest, utmYsForBoundaryOfInterest] = ...
+                simConfigs.deg2utm_speZone( ...
+                simConfigs.LAT_LON_BOUNDARY_OF_INTEREST(:,1), ...
+                simConfigs.LAT_LON_BOUNDARY_OF_INTEREST(:,2));
+            simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST = ...
+                [utmXsForBoundaryOfInterest, utmYsForBoundaryOfInterest];
+        end
     end
-end
-flagGpsPtsOfInterestSpecified ...
-    = isfield(simConfigs, 'LAT_LON_PTS_OF_INTEREST');
-flagAreaOfInterestSpecified ...
-    = isfield(simConfigs, 'UTM_X_Y_BOUNDARY_OF_INTEREST');
-% Only one way of specifying the locations to inspect is expected to be
-% used.
-if sum([flagGpsPtsOfInterestSpecified; flagAreaOfInterestSpecified])~=1
-    error('Not able to consctruct the locations of interest!');
-end
-
-if flagGpsPtsOfInterestSpecified
-    % If the GPS locations to inspect are set, we will use them directly.
-    simConfigs.gridLatLonPts = simConfigs.LAT_LON_PTS_OF_INTEREST;
-    
-    [gridXs,gridYs] = simConfigs.deg2utm_speZone( ...
-        simConfigs.gridLatLonPts(:,1), simConfigs.gridLatLonPts(:, 2));
-    simConfigs.gridXYPts = [gridXs,gridYs];
-elseif flagAreaOfInterestSpecified
-    % If the area of interest is set, we will generate a grid to inspect
-    % accordingly.
-    gridMinX = min(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1));
-    gridMaxX = max(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1));
-    gridMinY = min(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
-    gridMaxY = max(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
-    
-    gridResolutionInM = simConfigs.GRID_RESOLUTION_IN_M;
-    
-    gridXLabels = constructAxisGrid( ...
-        mean([gridMaxX, gridMinX]), ...
-        floor((gridMaxX-gridMinX)./gridResolutionInM), gridResolutionInM);
-    gridYLabels = constructAxisGrid( ...
-        mean([gridMaxY, gridMinY]), ...
-        floor((gridMaxY-gridMinY)./gridResolutionInM), gridResolutionInM);
-    [gridXs,gridYs] = meshgrid(gridXLabels,gridYLabels);
-    
-    % For reconstructing the grid in 2D if necessary.
-    simConfigs.numOfPixelsForLongerSide = ...
-        max(length(gridXLabels), length(gridYLabels));
-    
-    % Make sure there are no grid points out of the area of interest.
-    boolsGridPtsToKeep = inpolygon(gridXs(:), gridYs(:), ...
-        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1), ...
-        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
-    if ~all(boolsGridPtsToKeep)
-        error(['Not all the grid points generated ', ...
-            'are in the are of interest!']);
+    flagGpsPtsOfInterestSpecified ...
+        = isfield(simConfigs, 'LAT_LON_PTS_OF_INTEREST');
+    flagAreaOfInterestSpecified ...
+        = isfield(simConfigs, 'UTM_X_Y_BOUNDARY_OF_INTEREST');
+    % Only one way of specifying the locations to inspect is expected to be
+    % used.
+    if sum([flagGpsPtsOfInterestSpecified; flagAreaOfInterestSpecified])~=1
+        error('Not able to consctruct the locations of interest!');
     end
-    simConfigs.gridXYPts = [gridXs(boolsGridPtsToKeep), ...
-        gridYs(boolsGridPtsToKeep)];
     
-    % Convert UTM (x, y) to (lat, lon).
-    [gridLats, gridLons] = simConfigs.utm2deg_speZone( ...
-        simConfigs.gridXYPts(:,1), simConfigs.gridXYPts(:,2));
-    simConfigs.gridLatLonPts = [gridLats, gridLons];
+    if flagGpsPtsOfInterestSpecified
+        % If the GPS locations to inspect are set, we will use them
+        % directly.
+        simConfigs.gridLatLonPts = simConfigs.LAT_LON_PTS_OF_INTEREST;
+        
+        [gridXs,gridYs] = simConfigs.deg2utm_speZone( ...
+            simConfigs.gridLatLonPts(:,1), simConfigs.gridLatLonPts(:, 2));
+        simConfigs.gridXYPts = [gridXs,gridYs];
+    elseif flagAreaOfInterestSpecified
+        if isstring(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST)
+            disp(['        [', datestr(now, datetimeFormat), ...
+                '] Constructing UTM road segment of interest ...'])
+            disp(' ')
+            eval(strcat("simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST = ", ...
+                simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST));
+            disp(' ')
+        end
+        
+        % After the area of interest is properly set, we will generate a
+        % grid to inspect accordingly.
+        gridMinX = min(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1));
+        gridMaxX = max(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1));
+        gridMinY = min(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
+        gridMaxY = max(simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
+        
+        gridResolutionInM = simConfigs.GRID_RESOLUTION_IN_M;
+        
+        gridXLabels = constructAxisGrid( ...
+            mean([gridMaxX, gridMinX]), ...
+            floor((gridMaxX-gridMinX)./gridResolutionInM), ...
+            gridResolutionInM);
+        gridYLabels = constructAxisGrid( ...
+            mean([gridMaxY, gridMinY]), ...
+            floor((gridMaxY-gridMinY)./gridResolutionInM), ...
+            gridResolutionInM);
+        [gridXs,gridYs] = meshgrid(gridXLabels,gridYLabels);
+        
+        % For reconstructing the grid in 2D if necessary.
+        simConfigs.numOfPixelsForLongerSide = ...
+            max(length(gridXLabels), length(gridYLabels));
+        
+        % Make sure there are no grid points out of the area of interest.
+        boolsGridPtsToKeep = inpolygon(gridXs(:), gridYs(:), ...
+            simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,1), ...
+            simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST(:,2));
+        if ~all(boolsGridPtsToKeep)
+            warning(['Not all the grid points generated ', ...
+                'are in the are of interest!']);
+        end
+        simConfigs.gridXYPts = [gridXs(boolsGridPtsToKeep), ...
+            gridYs(boolsGridPtsToKeep)];
+        
+        % Convert UTM (x, y) to (lat, lon).
+        [gridLats, gridLons] = simConfigs.utm2deg_speZone( ...
+            simConfigs.gridXYPts(:,1), simConfigs.gridXYPts(:,2));
+        simConfigs.gridLatLonPts = [gridLats, gridLons];
+    end
+    
+    save(dirToSaveSimState, 'simConfigs', '-v7.3');
 end
-
 disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
 %% Preprocessing LiDAR Data
@@ -333,7 +358,7 @@ end
 addpath(fullfile(pwd, 'libs', 'lidar'));
 [lidarFileRelDirs, lidarFileXYCoveragePolyshapes, ~] ...
     = preprocessIndianaLidarDataSetDsm(dirToLidarFiles, ...
-    deg2utm_speZone, utm2deg_speZone);
+    simConfigs.deg2utm_speZone, simConfigs.utm2deg_speZone);
 rmpath(fullfile(pwd, 'libs', 'lidar'));
 lidarFileAbsDirs = cellfun(@(d) ...
     [dirToLidarFiles, strrep(d, '\', filesep)], ...
@@ -362,10 +387,9 @@ disp(' ')
 disp(['    [', datestr(now, datetimeFormat), ...
     '] Conducting simulation ...'])
 
-% The location for saving history results of simState, just in case any
-% interruption happens.
-dirToSaveSimState = fullfile(folderToSaveResults, 'simState.mat');
-if exist(dirToSaveSimState, 'file')
+listOfSimStateVs = who('-file', dirToSaveSimState);
+if exist(dirToSaveSimState, 'file') ...
+        && ismember('simState', listOfSimStateVs) 
     disp(['        [', datestr(now, datetimeFormat), ...
         '] The specified PRESET "', ...
         PRESET, '" has been processed before.'])

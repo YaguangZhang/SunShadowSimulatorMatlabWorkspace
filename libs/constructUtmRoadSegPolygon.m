@@ -76,9 +76,18 @@ UTM_STRUCT = evalin('base', "UTM_STRUCT");
 if ~exist('simConfigs', 'var')
     if evalin('base', "exist('simConfigs', 'var')")
         simConfigs = evalin('base', "simConfigs");
-        deg2utm_speZone = simConfigs.deg2utm_speZone;
-        utm2deg_speZone = simConfigs.utm2deg_speZone;
-        utmZone = simConfigs.UTM_ZONE;
+        try
+            deg2utm_speZone = simConfigs.deg2utm_speZone;
+            utm2deg_speZone = simConfigs.utm2deg_speZone;
+        catch
+            try
+                deg2utm_speZone = evalin('base', "deg2utm_speZone");
+                utm2deg_speZone = evalin('base', "utm2deg_speZone");
+            catch
+                [deg2utm_speZone, utm2deg_speZone] ...
+                    = genUtmConvertersForFixedZone(simConfigs.UTM_ZONE);
+            end
+        end
     else
         % We will use the UTM zone of the first input GPS point to
         % construct these functions.
@@ -91,7 +100,6 @@ if ~exist('simConfigs', 'var')
 else
     deg2utm_speZone = simConfigs.deg2utm_speZone;
     utm2deg_speZone = simConfigs.utm2deg_speZone;
-    utmZone = simConfigs.UTM_ZONE;
 end
 
 if evalin('base', "exist('INDOT_MILE_MARKERS_ROADNAME_LABELS', 'var')")
@@ -128,12 +136,13 @@ for idxSeg = 1:numOfSegs
             mileMarkers, UTM_STRUCT, ...
             INDOT_MILE_MARKERS_ROADNAME_LABELS);
     else
+        % This function will store in the base workspace a copy of
+        % INDOT_MILE_MARKERS_ROADNAME_LABELS if it is not there.
         [ptOnRoadStartMileage, INDOT_MILE_MARKERS_ROADNAME_LABELS] = ...
             gpsCoorWithRoadName2MileMarker( ...
             ptOnRoadStartLat, ptOnRoadStartLon, ...
             roadNameForMileMarkers, ...
             mileMarkers, UTM_STRUCT);
-        putvar(INDOT_MILE_MARKERS_ROADNAME_LABELS);
     end
     % Also for the end point on road.
     [ptOnRoadEndLat, ptOnRoadEndLon] ...
@@ -214,7 +223,9 @@ for idxSeg = 1:numOfSegs
 end
 
 % Merget the road segments.
-utmRoadSegPoly = union(destRoadSegUtmPolyshapes);
+utmRoadSegPolyshape = union(destRoadSegUtmPolyshapes);
+[utmRoadSegPolyXs, utmRoadSegPolyYs] = boundary(utmRoadSegPolyshape);
+utmRoadSegPoly = [utmRoadSegPolyXs utmRoadSegPolyYs];
 
 end
 % EOF
