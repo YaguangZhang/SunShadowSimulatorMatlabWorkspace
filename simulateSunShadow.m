@@ -164,9 +164,9 @@ simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.05;
 %   will be derived from simConfigs.UTM_ZONE. The times to inspect are
 %   essentially constructed via something like:
 %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
-simConfigs.LOCAL_TIME_START = datetime('12-Jan-2021 12:00:00');
-simConfigs.LOCAL_TIME_END = datetime('12-Jan-2021 16:59:59');
-simConfigs.TIME_INTERVAL_IN_M = 15; % In minutes.
+simConfigs.LOCAL_TIME_START = datetime('14-Jan-2021 07:00:00');
+simConfigs.LOCAL_TIME_END = datetime('14-Jan-2021 16:59:59');
+simConfigs.TIME_INTERVAL_IN_M = 30; % In minutes.
 
 %   - For the shadow location visualization video clip. For simplicity,
 %   please make sure PLAYBACK_SPEED/FRAME_RATE is an integer.
