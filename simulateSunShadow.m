@@ -15,7 +15,8 @@
 % Yaguang Zhang, Purdue, 11/24/2020
 
 % Avoid clearing big static variables.
-clearvars -except indotRoads;
+clearvars -except indotRoads ROAD_PROJ ...
+    indotMileMarkers MILE_MARKER_PROJ INDOT_MILE_MARKERS_ROADNAME_LABELS;
 clc; close all; dbstop if error;
 
 % Locate the Matlab workspace and save the current filename.
