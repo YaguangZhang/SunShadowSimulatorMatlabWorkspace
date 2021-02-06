@@ -45,11 +45,10 @@ if ~exist('indotRoads', 'var') || ~exist('ROAD_PROJ', 'var')
     end
     if evalin('base', ...
             '~exist(''indotRoads'',''var'')')
-        evalin('base', 'loadIndotMileMarkers');
-    else
-        indotRoads = evalin('base', 'indotRoads');
-        ROAD_PROJ = evalin('base', 'ROAD_PROJ');
+        evalin('base', 'loadIndotRoads');
     end
+    indotRoads = evalin('base', 'indotRoads');
+    ROAD_PROJ = evalin('base', 'ROAD_PROJ');
 end
 
 if ~exist('indotMileMarkers', 'var') || ~exist('MILE_MARKER_PROJ', 'var')
@@ -60,10 +59,9 @@ if ~exist('indotMileMarkers', 'var') || ~exist('MILE_MARKER_PROJ', 'var')
     if evalin('base', ...
             '~exist(''indotMileMarkers'',''var'')')
         evalin('base', 'loadIndotMileMarkers');
-    else
-        indotMileMarkers = evalin('base', 'indotMileMarkers');
-        MILE_MARKER_PROJ = evalin('base', 'MILE_MARKER_PROJ');
     end
+    indotMileMarkers = evalin('base', 'indotMileMarkers');
+    MILE_MARKER_PROJ = evalin('base', 'MILE_MARKER_PROJ');
 end
 
 roadName = '';
@@ -100,15 +98,6 @@ roadName = roadName{1};
 % gotten.
 mileMarkersOnThisRoad = getMileMarkersByRoadName( ...
     roadName, indotMileMarkers);
-
-% We can get all road segments if we want to. But the length of the
-% segments varies from 0 to 13.15 miles, which is troublesome to deal with.
-%
-% if ~exist('INDOT_ROAD_SEGS_ROADNAME_LABELS', 'var')
-%     INDOT_ROAD_SEGS_ROADNAME_LABELS = ...
-%         getRoadNamesForRoadSegs(indotRoads);
-% end roadSegsOnThisRoad = getRoadSegsByRoadName(roadName, ...
-%     indotRoads, INDOT_ROAD_SEGS_ROADNAME_LABELS);
 
 % Get the nearest 2 mile markers. Here we only use them to estimate the
 % mile post for the input point.

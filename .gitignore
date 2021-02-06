@@ -1,6 +1,9 @@
 # Google Maps API key
 libs/ext/zoharby-plot_google_map-6a7991e/api_key.mat
 
+# USGS cache data.
+usgsdata_forEachWorker/
+
 # Windows default autosave extension
 *.asv
 

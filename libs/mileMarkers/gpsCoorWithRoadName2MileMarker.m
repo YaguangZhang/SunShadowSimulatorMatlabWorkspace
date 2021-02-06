@@ -59,10 +59,9 @@ if ~exist('indotMileMarkers', 'var') || ~exist('MILE_MARKER_PROJ', 'var')
     if evalin('base', ...
             '~exist(''indotMileMarkers'',''var'')')
         evalin('base', 'loadIndotMileMarkers');
-    else
-        indotMileMarkers = evalin('base', 'indotMileMarkers');
-        MILE_MARKER_PROJ = evalin('base', 'MILE_MARKER_PROJ');
     end
+    indotMileMarkers = evalin('base', 'indotMileMarkers');
+    MILE_MARKER_PROJ = evalin('base', 'MILE_MARKER_PROJ');
 end
 
 % If there's an error, we will just return -1 for the mile marker.

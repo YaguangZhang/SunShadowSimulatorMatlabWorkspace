@@ -45,11 +45,10 @@ if ~exist('indotRoads', 'var') || ~exist('ROAD_PROJ', 'var')
     end
     if evalin('base', ...
             '~exist(''indotRoads'',''var'')')
-        evalin('base', 'loadIndotMileMarkers');
-    else
-        indotRoads = evalin('base', 'indotRoads');
-        ROAD_PROJ = evalin('base', 'ROAD_PROJ');
+        evalin('base', 'loadIndotRoads');
     end
+    indotRoads = evalin('base', 'indotRoads');
+    ROAD_PROJ = evalin('base', 'ROAD_PROJ');
 end
 
 if ~exist('flagDebug', 'var')
