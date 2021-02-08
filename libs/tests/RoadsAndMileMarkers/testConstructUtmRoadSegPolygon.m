@@ -6,7 +6,7 @@ clc; close all;
 dbstop if error;
 
 % Locate the Matlab workspace and save the current filename.
-cd(fullfile(fileparts(mfilename('fullpath')), '..', '..', '..')); 
+cd(fullfile(fileparts(mfilename('fullpath')), '..', '..', '..'));
 addpath('libs');
 curFileName = mfilename;
 
@@ -24,10 +24,11 @@ simConfigs.utm2deg_speZone = utm2deg_speZone;
 loadIndotRoads;
 loadIndotMileMarkers;
 
+roadName = 'U41';
 latLonStartPts = {[39.791532, -87.236069], [39.792541, -87.235928]};
 latLonEndPts = {[39.792553, -87.236054], [39.791528, -87.235930]};
 [utmRoadSegPoly] = constructUtmRoadSegPolygon( ...
-    'U41', ... roadNamesForCenterlinesAndMileMarkers
+    roadName, ... roadNamesForCenterlinesAndMileMarkers
     latLonStartPts, latLonEndPts);
 
 latLonStartPtsMat = vertcat(latLonStartPts{:});
@@ -51,7 +52,17 @@ figure; hold on;
 plot(lonLatRoadSegPoly);
 hS = plot(latLonStartPtsMat(:,2), latLonStartPtsMat(:,1), 'rx');
 hE = plot(latLonEndPtsMat(:,2), latLonEndPtsMat(:,1), 'bo');
-legend([hS, hE], 'Start Pts', 'End Pts');
+legend([hS, hE], 'Start Pts', 'End Pts', 'AutoUpdate', 'off')
+axisToSet = axis;
+
+% Show the centerline.
+roadSegs = getRoadSegsByRoadName(roadName, indotRoads);
+for idxSeg = 1:length(roadSegs)
+    plot(roadSegs(idxSeg).Lon, roadSegs(idxSeg).Lat, ...
+        'Linewidth', 3);
+end
+axis(axisToSet);
+
 plot_google_map('MapType', 'hybrid');
 
 % EOF

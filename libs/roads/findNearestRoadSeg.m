@@ -11,7 +11,7 @@ function [nearestSegs, nearestDist] ...
 %   - indotRoads
 %     Loaded INDOT road database. Fields required:
 %       - Shape_Leng
-%         The length (in meter) of the road segment.
+%         The length (in meters) of the road segment.
 %       - BoundingBox
 %         The bounding box [xMin, ymin; xMax, yMax] for the road segment.
 %   - flagPlotResults

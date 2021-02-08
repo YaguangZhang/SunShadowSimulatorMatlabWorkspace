@@ -11,7 +11,7 @@ function [roadSegUtmPolylines, mileages] ...
 %     The conversion function to use from GPS to UTM.
 %   - maxDistInMBetweenAdjPts
 %     Optional. A positive number. If provided, we will interpolate the
-%     output polylines so that the distance in meter between adjacent
+%     output polylines so that the distance in meters between adjacent
 %     points is at most this value.
 %   - roadSegMileages
 %     Optional. A cell with each element containing the mileage values, as

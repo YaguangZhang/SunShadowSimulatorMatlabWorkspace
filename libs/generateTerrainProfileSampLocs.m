@@ -9,7 +9,7 @@ function [ sampLocs ] ...
 %     The UTM (x,y) coordinates for the start point and end point of the
 %     terrain profile, repectively.
 %   - maxAllowedResInM
-%     The maximum distance between adjacent samples in meter.
+%     The maximum distance between adjacent samples in meters.
 %   - minNumSamps
 %     The minimum number of resulting sample points.
 %

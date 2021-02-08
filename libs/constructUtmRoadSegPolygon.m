@@ -1,4 +1,6 @@
-function [utmRoadSegPoly] = constructUtmRoadSegPolygon( ...
+function [utmRoadSegPoly, ...
+    roadNameForCenterLines, roadNameForMileMarkers] ...
+    = constructUtmRoadSegPolygon( ...
     roadNamesForCenterlinesAndMileMarkers, ...
     latLonStartPts, latLonEndPts, ...
     roadWidthInM, simConfigs)
@@ -15,12 +17,12 @@ function [utmRoadSegPoly] = constructUtmRoadSegPolygon( ...
 %   - latLonStartPts, latLonEndPts
 %     The (latitude, longitude) vectors for the start and end locations of
 %     the road of interest, respectively. If they are cells of (latitude,
-%     longitude), we will construct a polygon for each element pair and out
-%     put the union of the results.
+%     longitude), we will construct a polygon for each element pair and
+%     output the union of the results.
 %
 % Optional inputs:
 %   - roadWidthInM
-%     The width of the road in meter. We will extend the centerline
+%     The width of the road in meters. We will extend the centerline
 %     accordingly (by half of this value outwards) to construct each
 %     polygon (the width of the resultant polygon will be this value).
 %   - simConfigs
@@ -38,10 +40,13 @@ function [utmRoadSegPoly] = constructUtmRoadSegPolygon( ...
 %     We will generate these and store them in the base workspace if
 %     necessary.
 %
-% Output:
+% Outputs:
 %   - utmRoadSegPoly
 %     The boundary points of the road segment in the UTM zone controled by
 %     deg2utm_speZone.
+%   - roadNameForCenterLines, roadNameForMileMarkers
+%     The name for the road in the center line data set and the mile marker
+%     data set, respectively.
 %
 % Yaguang Zhang, Purdue, 02/02/2021
 
@@ -177,15 +182,9 @@ for idxSeg = 1:numOfSegs
         roadSegsUtmPolylines));
     
     % Compute the mileage values for the road polygon vertices.
-    curDestRoadSegPtXYs = curDestRoadSegUtmPolyshape.Vertices;
-    [curDestRoadSegPtLats, curDestRoadSegPtLons] ...
-        = utm2deg_speZone(curDestRoadSegPtXYs(:,1), ...
-        curDestRoadSegPtXYs(:,2));
-    curDestRoadPtMs = arrayfun( ...
-        @(idxPt) gpsCoorWithRoadName2MileMarker( ...
-        curDestRoadSegPtLats(idxPt), curDestRoadSegPtLons(idxPt), ...
-        roadNameForMileMarkers), ...
-        1:length(curDestRoadSegPtLats))';
+    [curDestRoadPtMs] = estimateVertexMileagesForUtmPolyshape( ...
+        curDestRoadSegUtmPolyshape, ...
+        utm2deg_speZone, roadNameForMileMarkers);
     
     % Break the road segment near the start and end points.
     destRoadSegUtmPolyshapes(idxSeg) ...
