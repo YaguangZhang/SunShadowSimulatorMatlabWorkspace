@@ -887,7 +887,7 @@ drawnow; pause(timeToPauseForFigUpdateInS);
 
 % Create a video writer for outputting the frames.
 curVideoWriter = VideoWriter( ...
-    pathToSaveVideo, 'Motion JPEG 2000');
+    pathToSaveVideo, 'Motion JPEG AVI');
 curVideoWriter.FrameRate = simConfigs.FRAME_RATE;
 open(curVideoWriter);
 
