@@ -517,7 +517,18 @@ else
 end
 
 %% Simulation Overview Plot
-overviewGridOnMap;
+
+% Always generate the figures when the PRESET is not RoadSimManager.
+% Otherwise, only generate the figures once.
+pathToSaveGridOnMapOverview = fullfile(folderToSaveResults, ...
+    'gridOnMapOverview');
+if strcmp(PRESET, 'RoadSimManager')
+    if ~exist(pathToSaveGridOnMapOverview, 'file')
+        overviewGridOnMap;
+    end
+else
+    overviewGridOnMap;
+end
 
 %% Simulation: Sunrise and Sunset Times
 
@@ -851,10 +862,6 @@ disp(['        [', datestr(now, datetimeFormat), ...
 
 %% Visualization: 3D LiDAR Plots for Debugging
 
-disp(' ')
-disp(['        [', datestr(now, datetimeFormat), ...
-    '] Generating plots for LiDAR data in the area of interest ...'])
-
 % Always generate the figures when the PRESET is not RoadSimManager.
 % Otherwise, only generate the figures once.
 debugResultsDir = fullfile(folderToSaveResults, ...
@@ -866,9 +873,6 @@ if strcmp(PRESET, 'RoadSimManager')
 else
     debugLidarDataForAreaOfInterest;
 end
-
-disp(['        [', datestr(now, datetimeFormat), ...
-    '] Done!'])
 
 %% Visualization: Video Clip for Shadow Location
 

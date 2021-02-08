@@ -3,6 +3,10 @@
 %
 % Yaguang Zhang, Purdue, 01/08/2021
 
+disp(' ')
+disp(['        [', datestr(now, datetimeFormat), ...
+    '] Generating plots for LiDAR data in the area of interest ...'])
+
 close all;
 
 %% LiDAR and terrain elevation data.
@@ -60,4 +64,8 @@ for idxFig = 1:length(curFigList)
     saveas(curFigHandle, fullfile(debugResultsDir, [curFigName '.fig']));
     saveas(curFigHandle, fullfile(debugResultsDir, [curFigName '.jpg']));
 end
+
+disp(['        [', datestr(now, datetimeFormat), ...
+    '] Done!'])
+
 % EOF
