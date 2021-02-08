@@ -183,8 +183,7 @@ else
         simManState.utmXYBoundariesOfInterest{idxSim} ...
             = [utmBoundariesOfInterestXs, utmBoundariesOfInterestYs];
         simManState.foldersToSaveResults{idxSim} ...
-            = fullfile(folderToSaveResults, ...
-            ['simSeries_', num2str(idxSim)]);
+            = ['simSeries_', num2str(idxSim)];
     end
     
     % Flags to record which simulations are already done.
@@ -238,7 +237,9 @@ disp(['    [', datestr(now, datetimeFormat), ...
 
 numOfSimSeries = length(simManState.flagsSimCompleted);
 for idxSim = 1:numOfSimSeries
-    if ~simManState.flagsSimCompleted(idxSim)
+    % If we are running this on a PC, we will always try generating the
+    % .mp4 video demos, even for completed simulations.
+    if ispc || ~simManState.flagsSimCompleted(idxSim)
         disp(' ')
         disp(fileNameHintRuler)
         disp(['        [', datestr(now, datetimeFormat), ...

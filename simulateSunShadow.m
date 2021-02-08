@@ -67,7 +67,8 @@ if strcmp(PRESET, 'RoadSimManager')
         'simManState.mat');
     load(dirToSaveSimManConfigs); load(dirToSaveSimManState);
     
-    folderToSaveResults = simManState.foldersToSaveResults{idxSim};
+    folderToSaveResults = fullfile(dirToSimManRsultsFolder, ...
+        simManState.foldersToSaveResults{idxSim});
 else
     folderToSaveResults = fullfile(ABS_PATH_TO_SHARED_FOLDER, ...
         'SunShadowSimulatorResults', ['Simulation_', PRESET, ...
@@ -986,6 +987,7 @@ disp(' ')
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Finishing simulation ...'])
 save(dirToSaveSimState, 'simConfigs', 'simState', '-append');
+close all;
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Done!'])
 
