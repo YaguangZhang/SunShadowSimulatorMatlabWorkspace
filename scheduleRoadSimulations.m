@@ -130,7 +130,7 @@ simConfigs.deg2utm_speZone = deg2utm_speZone;
 simConfigs.utm2deg_speZone = utm2deg_speZone;
 
 if exist(dirToSaveSimManState, 'file')
-    load(dirToSaveSimManState, 'simManConfigs');
+    load(dirToSaveSimManState, 'simManState');
 else
     % Construct a polyshape for the road segment of interest.
     disp(['        [', datestr(now, datetimeFormat), ...
@@ -225,8 +225,8 @@ for idxSimRoadSeg = 1:length(simManState.utmXYBoundariesOfInterest)
     plot(roadSegOfInterestLons, roadSegOfInterestLats, 'LineWidth', 3);
 end
 plot_google_map('MapType', 'hybrid');
-saveas(hFigSimRoadSegs, [dirToSaveFigRoadSegOfInterest, '.fig']);
-saveas(hFigSimRoadSegs, [dirToSaveFigRoadSegOfInterest, '.jpg']);
+saveas(hFigSimRoadSegs, [dirToSaveFigSimRoadSegs, '.fig']);
+saveas(hFigSimRoadSegs, [dirToSaveFigSimRoadSegs, '.jpg']);
 
 disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
