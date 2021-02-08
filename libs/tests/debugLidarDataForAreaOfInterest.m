@@ -6,6 +6,7 @@
 close all;
 
 %% LiDAR and terrain elevation data.
+
 figure; hold on;
 plot3k([simConfigs.gridLatLonPts(:,2), simConfigs.gridLatLonPts(:,1), ...
     simState.gridEles]);
@@ -47,8 +48,7 @@ zlim(newZLim); view(2);
 title('LiDAR z minus Terrain Elevation on Map');
 
 %% Save all the figures.
-debugResultsDir = fullfile(folderToSaveResults, ...
-    'debugLidarDataForAreaOfInterest');
+
 if ~exist(debugResultsDir, 'dir')
     mkdir(debugResultsDir)
 end

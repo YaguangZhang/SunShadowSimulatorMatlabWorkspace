@@ -855,97 +855,114 @@ disp(' ')
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Generating plots for LiDAR data in the area of interest ...'])
 
-debugLidarDataForAreaOfInterest;
+% Always generate the figures when the PRESET is not RoadSimManager.
+% Otherwise, only generate the figures once.
+debugResultsDir = fullfile(folderToSaveResults, ...
+    'debugLidarDataForAreaOfInterest');
+if strcmp(PRESET, 'RoadSimManager')
+    if ~exist(debugResultsDir, 'dir')
+        debugLidarDataForAreaOfInterest;
+    end
+else
+    debugLidarDataForAreaOfInterest;
+end
 
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Done!'])
 
 %% Visualization: Video Clip for Shadow Location
 
-disp(' ')
-disp(['        [', datestr(now, datetimeFormat), ...
-    '] Generating illustration video clip for shadow location ...'])
-
-timeToPauseForFigUpdateInS = 0.001;
+timeToPauseForFigUpdateInS = 0.000001;
 pathToSaveVideo = fullfile(folderToSaveResults, 'shadowLocOverTime');
 
-% Video parameters.
-simTimeLengthPerFrameInS = simConfigs.PLAYBACK_SPEED/simConfigs.FRAME_RATE;
-assert(floor(simTimeLengthPerFrameInS)==simTimeLengthPerFrameInS, ...
-    ['For simplicity, ', ...
-    'please make sure PLAYBACK_SPEED/VIDEO_FRAME_RATE is an integer!']);
-
-% Plot the background.
-matRxLonLatWithPathLoss = [simConfigs.gridLatLonPts(:,[2,1]), ...
-    simState.uniformSunPower(:,1)];
-sunAziZens = [simState.sunAzis(:,1), simState.sunZens(:,1)];
-[hFigShadowLoc, hsShadowMap] = ...
-    plotSunShadowMap(matRxLonLatWithPathLoss, simConfigs, sunAziZens);
-lastDatetime = simConfigs.localDatetimesToInspect(1);
-title(datestr(lastDatetime, datetimeFormat));
-drawnow; pause(timeToPauseForFigUpdateInS);
-
-% Create a video writer for outputting the frames.
-curVideoWriter = VideoWriter( ...
-    pathToSaveVideo, 'Motion JPEG AVI');
-curVideoWriter.FrameRate = simConfigs.FRAME_RATE;
-open(curVideoWriter);
-
-try
-    % Go through all remaining times.
-    for curIdxDatetime = 2:length(simConfigs.localDatetimesToInspect)
-        curDatetime = simConfigs.localDatetimesToInspect(curIdxDatetime);
-        
-        % Output the video.
-        lastSimTime = lastDatetime;
+% Only generate the video if it does not exist.
+if ~exist(pathToSaveVideo, 'file')    
+    disp(' ')
+    disp(['        [', datestr(now, datetimeFormat), ...
+        '] Generating illustration video clip for shadow location ...'])
+    
+    % Video parameters.
+    simTimeLengthPerFrameInS ...
+        = simConfigs.PLAYBACK_SPEED/simConfigs.FRAME_RATE;
+    assert(floor(simTimeLengthPerFrameInS)==simTimeLengthPerFrameInS, ...
+        ['For simplicity, ', ...
+        'please make sure PLAYBACK_SPEED/VIDEO_FRAME_RATE ', ...
+        'is an integer!']);
+    
+    % Plot the background.
+    matRxLonLatWithPathLoss = [simConfigs.gridLatLonPts(:,[2,1]), ...
+        simState.uniformSunPower(:,1)];
+    sunAziZens = [simState.sunAzis(:,1), simState.sunZens(:,1)];
+    [hFigShadowLoc, hsShadowMap] = ...
+        plotSunShadowMap(matRxLonLatWithPathLoss, simConfigs, sunAziZens);
+    lastDatetime = simConfigs.localDatetimesToInspect(1);
+    title(datestr(lastDatetime, datetimeFormat));
+    drawnow; pause(timeToPauseForFigUpdateInS);
+    
+    % Create a video writer for outputting the frames.
+    curVideoWriter = VideoWriter( ...
+        pathToSaveVideo, 'Motion JPEG AVI');
+    curVideoWriter.FrameRate = simConfigs.FRAME_RATE;
+    open(curVideoWriter);
+    
+    try
+        % Go through all remaining times.
+        for curIdxDatetime = 2:length(simConfigs.localDatetimesToInspect)
+            curDatetime ...
+                = simConfigs.localDatetimesToInspect(curIdxDatetime);
+            
+            % Output the video.
+            lastSimTime = lastDatetime;
+            for curSimTimeInS ...
+                    = lastDatetime:seconds(1):(curDatetime-seconds(1))
+                elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
+                if elapsedSimTimeInS>=simTimeLengthPerFrameInS
+                    writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+                    lastSimTime = curSimTimeInS;
+                end
+            end
+            
+            % Update the figure.
+            deleteHandles(hsShadowMap);
+            
+            matRxLonLatWithPathLoss ...
+                = [simConfigs.gridLatLonPts(:,[2,1]), ...
+                simState.uniformSunPower(:,curIdxDatetime)];
+            sunAziZens = [simState.sunAzis(:,curIdxDatetime), ...
+                simState.sunZens(:,curIdxDatetime)];
+            [hFigShadowLoc, hsShadowMap] = ...
+                plotSunShadowMap(matRxLonLatWithPathLoss, ...
+                simConfigs, sunAziZens, hFigShadowLoc);
+            title(datestr(curDatetime, datetimeFormat));
+            drawnow; pause(timeToPauseForFigUpdateInS);
+            
+            lastDatetime = curDatetime;
+        end
+        % Output the last frame and close the video writer.
         for curSimTimeInS ...
-                = lastDatetime:seconds(1):(curDatetime-seconds(1))
+                = lastDatetime:seconds(1) ...
+                :(simConfigs.LOCAL_TIME_END-seconds(1))
             elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
             if elapsedSimTimeInS>=simTimeLengthPerFrameInS
                 writeVideo(curVideoWriter, getframe(hFigShadowLoc));
                 lastSimTime = curSimTimeInS;
             end
         end
-        
-        % Update the figure.
-        deleteHandles(hsShadowMap);
-        
-        matRxLonLatWithPathLoss = [simConfigs.gridLatLonPts(:,[2,1]), ...
-            simState.uniformSunPower(:,curIdxDatetime)];
-        sunAziZens = [simState.sunAzis(:,curIdxDatetime), ...
-            simState.sunZens(:,curIdxDatetime)];
-        [hFigShadowLoc, hsShadowMap] = ...
-            plotSunShadowMap(matRxLonLatWithPathLoss, ...
-            simConfigs, sunAziZens, hFigShadowLoc);
-        title(datestr(curDatetime, datetimeFormat));
-        drawnow; pause(timeToPauseForFigUpdateInS);
-        
-        lastDatetime = curDatetime;
-    end
-    % Output the last frame and close the video writer.
-    for curSimTimeInS ...
-            = lastDatetime:seconds(1) ...
-            :(simConfigs.LOCAL_TIME_END-seconds(1))
-        elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
-        if elapsedSimTimeInS>=simTimeLengthPerFrameInS
-            writeVideo(curVideoWriter, getframe(hFigShadowLoc));
-            lastSimTime = curSimTimeInS;
+    catch err
+        disp(getReport(exception))
+        if strcmp(PRESET, 'RoadSimManager')
+            warning([ ...
+                'There was an error generating the video ', ...
+                'for simulation #', num2str(idxSim), '!'])
+        else
+            error('There was an error generating the video!')
         end
     end
-catch err
-    disp(getReport(exception))
-    if strcmp(PRESET, 'RoadSimManager')
-        warning([ ...
-            'There was an error generating the video for simulation #', ...
-            num2str(idxSim), '!'])
-    else
-        error('There was an error generating the video!')
-    end
+    close(curVideoWriter);
+    
+    disp(['        [', datestr(now, datetimeFormat), ...
+        '] Done!'])
 end
-close(curVideoWriter);
-
-disp(['        [', datestr(now, datetimeFormat), ...
-    '] Done!'])
 
 %% Statistics: Sun Engergy
 
