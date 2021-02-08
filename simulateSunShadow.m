@@ -875,8 +875,9 @@ disp(['        [', datestr(now, datetimeFormat), ...
 timeToPauseForFigUpdateInS = 0.000001;
 pathToSaveVideo = fullfile(folderToSaveResults, 'shadowLocOverTime');
 
-% Only generate the video if it does not exist.
-if ~exist(pathToSaveVideo, 'file')    
+% Only generate the video if it does not exist and if the host is a windows
+% computer.
+if ispc && ~exist(pathToSaveVideo, 'file')
     disp(' ')
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Generating illustration video clip for shadow location ...'])
@@ -901,7 +902,7 @@ if ~exist(pathToSaveVideo, 'file')
     
     % Create a video writer for outputting the frames.
     curVideoWriter = VideoWriter( ...
-        pathToSaveVideo, 'Motion JPEG AVI');
+        pathToSaveVideo, 'MPEG-4');
     curVideoWriter.FrameRate = simConfigs.FRAME_RATE;
     open(curVideoWriter);
     
