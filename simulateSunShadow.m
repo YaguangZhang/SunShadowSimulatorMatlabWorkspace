@@ -1,4 +1,4 @@
-%SIMULATESUNSHADOW Find sun shadow based for the location and time of
+%SIMULATESUNSHADOW Find sun's shadow based on the location and time of
 %interest.
 %
 % Given a location of interest P (together with the time of interest), we
