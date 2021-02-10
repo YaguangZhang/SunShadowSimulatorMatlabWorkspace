@@ -272,7 +272,7 @@ disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
 if ~exist('folderToSaveResults', 'var')
     % We will recreate folderToSaveResults from know variables.
-    folderToSaveResults = fileparts(dirToSaveManDiary);    
+    folderToSaveResults = fileparts(dirToSaveManDiary);
 end
 [~, folderNameToSaveResults] = fileparts(folderToSaveResults);
 
@@ -281,6 +281,13 @@ if ~exist('simManState', 'var')
     dirToSaveSimManState = fullfile(folderToSaveResults, ...
         'simManState.mat');
     load(dirToSaveSimManState);
+end
+
+if ~exist('simManConfigs', 'var')
+    % Load the (lat, lon) coordinates for the polygons.
+    dirToSaveSimManConfigs = fullfile(folderToSaveResults, ...
+        'simManConfigs.mat');
+    load(dirToSaveSimManConfigs);
 end
 
 % Locate simulation results.
@@ -293,47 +300,105 @@ seriesNums = cellfun(@(idxCell) str2num(idxCell{1}), ...
 [seriesNums, indicesSorted] = sort(seriesNums);
 simStateDirs = simStateDirs(indicesSorted);
 
-% Export the polygons to a KML file.
-kmlWriter = kml(fullfile(folderToSaveResults, ...
-    ['SunShadowRatio_', folderNameToSaveResults]));
+% Export the polygons to a KML file. We have two libraries available:
+%   - 'Google Earth Toolbox'
+%     Recommended because it suppots [nan, nan] in the input coordinates.
+%   - 'KML Toolbox'
+%     This will generate .kmz files.
+KML_LIB_TO_USE = 'Google Earth Toolbox';
+
+polyFaceColor = [255, 0, 0];
+dirKmlFileToSave = fullfile(folderToSaveResults, ...
+    ['SunShadowRatio_', folderNameToSaveResults]);
 numOfPolygons = length(simStateDirs);
 localDatetimesToInspect = simManConfigs.LOCAL_TIME_START ...
     :minutes(simManConfigs.TIME_INTERVAL_IN_M) ...
     :simManConfigs.LOCAL_TIME_END;
 numOfTimes = length(localDatetimesToInspect);
-polyFaceColor = [255, 0, 0];
-kmlFolders = cell(numOfTimes, 1);
-for idxTime = 1:numOfTimes
-    curDatetime = localDatetimesToInspect(idxTime);
-    eval(strcat("kmlFolder", num2str(idxTime), ...
-        " = kmlWriter.createFolder(", ...
-        "datestr(curDatetime, 'yyyy-mm-dd HHMM'));"));
+
+switch KML_LIB_TO_USE
+    case 'KML Toolbox'
+        kmlWriter = kml(dirKmlFileToSave);
+        
+        kmlFolders = cell(numOfTimes, 1);
+        for idxTime = 1:numOfTimes
+            curDatetime = localDatetimesToInspect(idxTime);
+            eval(strcat("kmlFolder", num2str(idxTime), ...
+                " = kmlWriter.createFolder(", ...
+                "datestr(curDatetime, 'yyyy-mm-dd HHMM'));"));
+        end
+        for idxPoly = seriesNums'
+            curSimStateFile = load(simStateDirs(idxPoly).name, 'simState');
+            
+            curPolyLats ...
+                = simManState.latLonBoundariesOfInterest{idxPoly}(:, 1);
+            curPolyLons ...
+                = simManState.latLonBoundariesOfInterest{idxPoly}(:, 2);
+            curUnifSunPower = curSimStateFile.simState.uniformSunPower;
+            
+            [curNumOfLocs, curNumOfTimes] = size(curUnifSunPower);
+            assert(curNumOfTimes==numOfTimes, ...
+                ['The time settings in series #', num2str(idxPoly), ...
+                ' do not match with those in simManConfigs!'])
+            for idxTime = 1:numOfTimes
+                curAlpha = round( ...
+                    255*sum(curUnifSunPower(:, idxTime)==0)/curNumOfLocs);
+                [colorHex] ...
+                    = constructHexColorForKml(polyFaceColor, curAlpha);
+                eval(strcat("kmlFolder", num2str(idxTime), ...
+                    ".poly(curPolyLons, curPolyLats, ", ...
+                    "'altitude', zeros(size(curPolyLons)), ", ...
+                    "'altitudeMode', 'relativeToGround', ", ...
+                    "'extrude', true, ", ...
+                    "'name', ['simSeries_', num2str(idxPoly)], ", ...
+                    "'lineWidth', 0, 'polyColor', colorHex);"));
+            end
+        end
+        kmlWriter.run;
+    case 'Google Earth Toolbox'
+        kmlPolygons = cell(numOfPolygons, numOfTimes);
+        for idxPoly = seriesNums'
+            curSimStateFile = load(simStateDirs(idxPoly).name, 'simState');
+            
+            curPolyLats ...
+                = simManState.latLonBoundariesOfInterest{idxPoly}(:, 1);
+            curPolyLons ...
+                = simManState.latLonBoundariesOfInterest{idxPoly}(:, 2);
+            curUnifSunPower = curSimStateFile.simState.uniformSunPower;
+            
+            [curNumOfLocs, curNumOfTimes] = size(curUnifSunPower);
+            assert(curNumOfTimes==numOfTimes, ...
+                ['The time settings in series #', num2str(idxPoly), ...
+                ' do not match with those in simManConfigs!'])
+            for idxTime = 1:numOfTimes
+                curAlpha = round( ...
+                    255*sum(curUnifSunPower(:, idxTime)==0)/curNumOfLocs);
+                colorHex ...
+                    = constructHexColorForKml(polyFaceColor, curAlpha);
+                kmlPolygons{idxPoly, idxTime} = ge_poly( ...
+                    curPolyLons, curPolyLats,...
+                    'lineWidth', 0, ...
+                    'polyColor', colorHex,...
+                    'altitude', 1,...
+                    'altitudeMode', 'relativeToGround',...
+                    'extrude', 1,...
+                    'tessellate', true, ...
+                    'name', ['simSeries_', num2str(idxPoly)]);
+            end
+        end
+        
+        kmlFolders = cell(numOfTimes, 1);
+        for idxTime = 1:numOfTimes
+            curDatetime = localDatetimesToInspect(idxTime);
+            kmlFolders{idxTime} ...
+                = ge_folder(datestr(curDatetime, 'yyyy-mm-dd HHMM'), ...
+                strcat(kmlPolygons{:,idxTime}));
+        end
+        
+        ge_output([dirKmlFileToSave, '.kml'], strcat(kmlFolders{:}));
+    otherwise
+        error(['Unknown KML library: ', KML_LIB_TO_USE, '!'])
 end
-for idxPoly = seriesNums'
-    curSimStateFile = load(simStateDirs(idxPoly).name, 'simState');
-    
-    curPolyLats = simManState.latLonBoundariesOfInterest{idxPoly}(:, 1);
-    curPolyLons = simManState.latLonBoundariesOfInterest{idxPoly}(:, 2);
-    curUnifSunPower = curSimStateFile.simState.uniformSunPower;
-    
-    [curNumOfLocs, curNumOfTimes] = size(curUnifSunPower);
-    assert(curNumOfTimes==numOfTimes, ...
-        ['The time settings in series #', num2str(idxPoly), ...
-        ' do not match with those in simManConfigs!'])
-    for idxTime = 1:numOfTimes
-        curAlpha = round( ...
-            255*sum(curUnifSunPower(:, idxTime)==0)/curNumOfLocs);
-        [colorHex] = constructHexColorForKml(polyFaceColor, curAlpha);
-        eval(strcat("kmlFolder", num2str(idxTime), ...
-            ".poly(curPolyLons, curPolyLats, ", ...
-            "'altitude', zeros(size(curPolyLons)), ", ...
-            "'altitudeMode', 'relativeToGround', ", ...
-            "'extrude', true, ", ...
-            "'name', ['simSeries_', num2str(idxPoly)], ", ...
-            "'lineWidth', 0, 'polyColor', colorHex);"));
-    end
-end
-kmlWriter.run;
 
 %% Cleanup
 
