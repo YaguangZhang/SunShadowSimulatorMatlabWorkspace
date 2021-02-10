@@ -17,6 +17,6 @@ if length(ghex)==1,ghex=['0' ghex];end
 if length(bhex)==1,bhex=['0' bhex];end
 if length(ahex)==1,ahex=['0' ahex];end
 
-colorHex = [ahex bhex ghex rhex];
+colorHex = [ahex rhex ghex bhex];
 end
 % EOF
