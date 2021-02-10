@@ -1,3 +1,7 @@
+# Google Earth Toolbox test results.
+*.dae
+*.kml
+
 # Google Maps API key
 libs/ext/zoharby-plot_google_map-6a7991e/api_key.mat
 
