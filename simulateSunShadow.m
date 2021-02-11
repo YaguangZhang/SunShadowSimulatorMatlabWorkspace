@@ -592,9 +592,10 @@ for idxDay = 1:totalNumOfDays
             % SPA_ZA_RTS = 2.
             curSpaIn.function = 2;
             [spaErrCode, curSpaOut] = getSolarPosition(curSpaIn);
-            assert(spaErrCode==0, ...
-                ['There was an error from SPA; error code: ', ...
-                num2str(spaErrCode), '!'])
+            if spaErrCode~=0
+                warning(['There was an error from SPA; error code: ', ...
+                    num2str(spaErrCode), '!'])
+            end
             
             curSunriseFracHour = curSpaOut.sunrise;
             curSunsetFracHour = curSpaOut.sunset;
