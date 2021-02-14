@@ -586,6 +586,22 @@ for idxDay = 1:totalNumOfDays
             % Reenable warning.
             warning('on', 'MATLAB:dispatcher:UnresolvedFunctionHandle');
             
+            % If the elevation for the point of interest is not valid, we
+            % will switch to Google ground elevation data for the
+            % observer's height.
+            if isnan(curObserverEle) || isinf(curObserverEle)
+                if ~exist('var', 'apiKey')
+                    % The library plot_google_map should have generated a
+                    % cache .mat file with a valid Google Maps API key if
+                    % it runs successfully. If not so, please run
+                    % plot_google_map with a key first.
+                    load('api_key.mat', 'apiKey');
+                end
+                curObserverEle = getElevations( ...
+                    curLatLon(1), curLatLon(2), ...
+                    'key', apiKey);
+            end
+            
             curSpaIn = constructSpaStruct(simConfigs.timezone, ...
                 curDatetime, [curLatLon curObserverEle]);
             % Calculate zenith, azimuth, and sun rise/transit/set values:
