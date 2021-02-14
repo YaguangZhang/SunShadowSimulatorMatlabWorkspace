@@ -42,7 +42,7 @@ else
     % not be set and we will run the simulation for a scenario defined
     % below in this script. Please refer to the Simulation Configurations
     % section for the supported presets.
-    PRESET = 'US41_InShadowSeg_DecToMar';
+    PRESET = 'US41_UnderSunSeg_DecToMar';
 end
 
 %% Script Parameters
@@ -165,6 +165,23 @@ switch PRESET
             39.53053164039784, -87.403826043443; ...
             39.5302992981773, -87.40394696741747];
         simConfigs.GRID_RESOLUTION_IN_M = 3;
+    case 'US41_UnderSunSeg_DecToMar'
+        %   - A test segment on US 41 where few trees are present on both
+        %   road sides.
+        simConfigs.LAT_LON_BOUNDARY_OF_INTEREST ...
+            = [39.53295381967004, -87.40228172587504; ...
+            39.5325313227941, -87.40250039754491; ...
+            39.53256484277994, -87.40260840605555; ...
+            39.53298733985383, -87.40238973493871; ...
+            39.53295381967004, -87.40228172587504; ...
+            nan, nan; 39.53260720823465, -87.40274788798581; ...
+            39.53264152085912, -87.40285548071793; ...
+            39.53290394196762, -87.40271591088739; ...
+            39.53306306841725, -87.40263374983441; ...
+            39.53302954845032, -87.40252574050061; ...
+            39.53287005940179, -87.40260808901955; ...
+            39.53260720823465, -87.40274788798581];
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
 end
@@ -232,6 +249,12 @@ if strcmp(PRESET, 'RoadSimManager')
     simConfigs.LOCAL_TIME_END = simManConfigs.LOCAL_TIME_END;
     simConfigs.TIME_INTERVAL_IN_M = simManConfigs.TIME_INTERVAL_IN_M;
 elseif strcmp(PRESET, 'US41_InShadowSeg_DecToMar')
+    % Covers the winter solstice to spring equinox.
+    simConfigs.LOCAL_TIME_START = '20-Dec-2020 06:00:00';
+    simConfigs.LOCAL_TIME_END = '21-Mar-2021 18:00:00';
+    simConfigs.TIME_INTERVAL_IN_M = 15;
+    simConfigs.DATE_INTERVAL_IN_D = 7;
+elseif strcmp(PRESET, 'US41_UnderSunSeg_DecToMar')
     % Covers the winter solstice to spring equinox.
     simConfigs.LOCAL_TIME_START = '20-Dec-2020 06:00:00';
     simConfigs.LOCAL_TIME_END = '21-Mar-2021 18:00:00';
