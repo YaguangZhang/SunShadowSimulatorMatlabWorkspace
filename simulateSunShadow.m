@@ -590,7 +590,7 @@ for idxDay = 1:totalNumOfDays
             % will switch to Google ground elevation data for the
             % observer's height.
             if isnan(curObserverEle) || isinf(curObserverEle)
-                if ~exist('var', 'apiKey')
+                if ~exist('apiKey', 'var')
                     % The library plot_google_map should have generated a
                     % cache .mat file with a valid Google Maps API key if
                     % it runs successfully. If not so, please run
