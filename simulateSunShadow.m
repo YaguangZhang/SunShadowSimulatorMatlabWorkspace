@@ -42,7 +42,7 @@ else
     % not be set and we will run the simulation for a scenario defined
     % below in this script. Please refer to the Simulation Configurations
     % section for the supported presets.
-    PRESET = 'US41_UnderSunSeg_DecToMar';
+    PRESET = 'US41_HalfShadowSeg_DecToMar';
 end
 
 %% Script Parameters
@@ -165,6 +165,23 @@ switch PRESET
             39.53053164039784, -87.403826043443; ...
             39.5302992981773, -87.40394696741747];
         simConfigs.GRID_RESOLUTION_IN_M = 3;
+    case 'US41_HalfShadowSeg_DecToMar'
+        %   - A test segment on US 41 where some trees are present on both
+        %   road sides.
+        simConfigs.LAT_LON_BOUNDARY_OF_INTEREST ...
+            = [39.53211214656535, -87.40271985874566; ...
+            39.53169539933558, -87.40293901428895; ...
+            39.53172938138214, -87.40304678044197; ...
+            39.53214612880989, -87.40282762543964; ...
+            39.53211214656535, -87.40271985874566; ...
+            nan, nan; 39.53177361562254, -87.40318450559923; ...
+            39.53180690545257, -87.40329263157689; ...
+            39.53182168077103, -87.4032850453129; ...
+            39.5322247819196, -87.40307705689803; ...
+            39.53219079916998, -87.40296928762197; ...
+            39.53178832027661, -87.40317695559445; ...
+            39.53177361562254, -87.40318450559923];
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
     case 'US41_UnderSunSeg_DecToMar'
         %   - A test segment on US 41 where few trees are present on both
         %   road sides.
@@ -249,6 +266,12 @@ if strcmp(PRESET, 'RoadSimManager')
     simConfigs.LOCAL_TIME_END = simManConfigs.LOCAL_TIME_END;
     simConfigs.TIME_INTERVAL_IN_M = simManConfigs.TIME_INTERVAL_IN_M;
 elseif strcmp(PRESET, 'US41_InShadowSeg_DecToMar')
+    % Covers the winter solstice to spring equinox.
+    simConfigs.LOCAL_TIME_START = '20-Dec-2020 06:00:00';
+    simConfigs.LOCAL_TIME_END = '21-Mar-2021 18:00:00';
+    simConfigs.TIME_INTERVAL_IN_M = 15;
+    simConfigs.DATE_INTERVAL_IN_D = 7;
+elseif strcmp(PRESET, 'US41_HalfShadowSeg_DecToMar')
     % Covers the winter solstice to spring equinox.
     simConfigs.LOCAL_TIME_START = '20-Dec-2020 06:00:00';
     simConfigs.LOCAL_TIME_END = '21-Mar-2021 18:00:00';
