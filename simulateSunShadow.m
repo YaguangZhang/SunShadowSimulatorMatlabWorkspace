@@ -461,6 +461,24 @@ else
     
     save(dirToSaveSimState, 'simConfigs', '-v7.3');
 end
+
+% Append extra fields for easier data importation in other languages, e.g.,
+% Python.
+dirToSaveSimConfigsExtra = fullfile(folderToSaveResults, ...
+    'simConfigsExtra.mat');
+if ~exist(dirToSaveSimConfigsExtra, 'file')
+    simConfigs.utcUnixTimesInSToInspect = nan( ...
+        size(simConfigs.localDatetimesToInspect));
+    numOfTimes = length(simConfigs.localDatetimesToInspect(:));
+    for idxTime = 1:numOfTimes
+        simConfigs.utcUnixTimesInSToInspect(idxTime) ...
+            = localDatetime2UtcUnixTimeInS( ...
+            simConfigs.localDatetimesToInspect(idxTime), ...
+            simConfigs.timezone);
+    end
+    save(dirToSaveSimConfigsExtra, 'simConfigs', '-v7.3');
+end
+
 disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
 %% Preprocessing LiDAR Data
@@ -528,8 +546,6 @@ if exist(dirToSaveSimState, 'file') ...
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Loading history simState ...'])
     load(dirToSaveSimState, 'simState');
-    disp(['        [', datestr(now, datetimeFormat), ...
-        '] Done!'])
 else
     disp(['        [', datestr(now, datetimeFormat), ...
         '] Initializing simState ...'])
@@ -592,9 +608,10 @@ else
     % Generate a history file. Note that the simConfigs saved now contains
     % information derived from the parameters set by the users.
     save(dirToSaveSimState, 'simConfigs', 'simState', '-append');
-    disp(['        [', datestr(now, datetimeFormat), ...
-        '] Done!'])
 end
+
+disp(['        [', datestr(now, datetimeFormat), ...
+    '] Done!'])
 
 %% Simulation Overview Plot
 
@@ -1078,11 +1095,11 @@ disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
 %% Cleanup
 
-% Update the simulation results in the history .mat file, just in case.
 disp(' ')
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Finishing simulation ...'])
-save(dirToSaveSimState, 'simConfigs', 'simState', '-append');
+% Update the simulation results in the history .mat file, just in case.
+%save(dirToSaveSimState, 'simConfigs', 'simState', '-append');
 close all;
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Done!'])
