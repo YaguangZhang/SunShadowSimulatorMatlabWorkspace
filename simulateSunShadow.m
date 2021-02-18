@@ -607,7 +607,7 @@ else
     
     % Generate a history file. Note that the simConfigs saved now contains
     % information derived from the parameters set by the users.
-    save(dirToSaveSimState, 'simConfigs', 'simState', '-append');
+    save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
 end
 
 disp(['        [', datestr(now, datetimeFormat), ...
@@ -787,7 +787,7 @@ for idxDay = 1:totalNumOfDays
             % necessary. Note that this attempt may miss the last save
             % required when all locations are processed.
             if flagSimStateUpdated
-                save(dirToSaveSimState, 'simState', '-append');
+                save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
                 flagSimStateUpdated = false;
             end
             
@@ -805,7 +805,7 @@ for idxDay = 1:totalNumOfDays
             % Also take the chance to update the history results if
             % necessary.
             if flagSimStateUpdated
-                save(dirToSaveSimState, 'simState', '-append');
+                save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
                 flagSimStateUpdated = false;
             end
             
@@ -959,13 +959,13 @@ for idxLoc = indicesLocToProcess
             > simConfigs.MIN_PROGRESS_RATIO_TO_REPORT*totalNumOfDays
         curNumOfLocTimePairsProcessed = 0;
         % Also take the chance to update the history results.
-        save(dirToSaveSimState, 'simState', '-append');
+        save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
     end
     
     if numOfLocTimePairsProcessed == totalNumOfLocTimePairs
         % All done. Save the results.
         simState.flagShadowLocated = true;
-        save(dirToSaveSimState, 'simState', '-append');
+        save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
         disp(['            [', ...
             datestr(now, datetimeFormat), '] Done!'])
     end
@@ -1099,7 +1099,7 @@ disp(' ')
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Finishing simulation ...'])
 % Update the simulation results in the history .mat file, just in case.
-%save(dirToSaveSimState, 'simConfigs', 'simState', '-append');
+save(dirToSaveSimState, 'simConfigs', 'simState', '-append');
 close all;
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Done!'])

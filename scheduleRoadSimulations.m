@@ -260,7 +260,7 @@ for idxSim = 1:numOfSimSeries
         diary(dirToSaveManDiary);
         % Update and save the flags.
         simManState.flagsSimCompleted(idxSim) = true;
-        save(dirToSaveSimManState, 'simManState', '-append');
+        save(dirToSaveSimManState, 'simManState', '-v7.3');
     end
 end
 
