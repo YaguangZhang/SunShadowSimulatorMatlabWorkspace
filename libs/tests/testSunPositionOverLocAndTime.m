@@ -23,16 +23,8 @@ datetimeFormat = 'yyyy/mm/dd HH:MM:ss';
 
 % UTM zone to use.
 UTM_ZONE = '16 T';
-% Convert GPS degrees to UTM coordinates for the specified zone.
-utmstruct_speZone = defaultm('utm');
-% Remove white space in the zone label.
-utmstruct_speZone.zone ...
-    = UTM_ZONE(~isspace(UTM_ZONE));
-utmstruct_speZone.geoid = wgs84Ellipsoid;
-utmstruct_speZone = defaultm(utmstruct_speZone);
-
-deg2utm_speZone = @(lat, lon) mfwdtran(utmstruct_speZone, lat,lon);
-utm2deg_speZone = @(x, y) minvtran(utmstruct_speZone, x, y);
+[deg2utm_speZone, utm2deg_speZone] ...
+    = genUtmConvertersForFixedZone(UTM_ZONE);
 
 % The time zone to use for the observer is derived from the UTM zone.
 [~, zoneCenterLon] = utm2deg_speZone(500000,0);
@@ -286,5 +278,9 @@ saveas(hSunPosCenterZens, ...
     fullfile(folderToSaveResults, 'sunPosCentZens.fig'));
 saveas(hSunPosCenterZens, ...
     fullfile(folderToSaveResults, 'sunPosCentZens.jpg'));
+
+%% Cleanup
+
+diary off;
 
 % EOF
