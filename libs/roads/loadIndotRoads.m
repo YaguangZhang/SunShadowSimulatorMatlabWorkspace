@@ -95,7 +95,7 @@ if ~exist('indotRoads', 'var')
         disp('Pre-processing: Done!')
         
         if flagSaveResultsToMat
-            disp(' ') %#ok<UNRCH>
+            disp(' ')
             disp('Pre-processing: Saving the INDOT road structure in to a mat file...')
             
             tic;

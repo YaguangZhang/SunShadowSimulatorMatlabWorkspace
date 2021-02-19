@@ -303,17 +303,9 @@ end
 % Pre-assign LIDAR_DATA_SET_TO_USE based on the user's settings.
 simConfigs.LIDAR_DATA_SET_TO_USE = lidarDataSetToUse;
 
-% Convert GPS degrees to UTM coordinates for the specified zone.
-utmstruct_speZone = defaultm('utm');
-% Remove white space in the zone label.
-utmstruct_speZone.zone ...
-    = simConfigs.UTM_ZONE(~isspace(simConfigs.UTM_ZONE));
-utmstruct_speZone.geoid = wgs84Ellipsoid;
-utmstruct_speZone = defaultm(utmstruct_speZone);
-
-deg2utm_speZone = @(lat, lon) mfwdtran(utmstruct_speZone, lat,lon);
-utm2deg_speZone = @(x, y) minvtran(utmstruct_speZone, x, y);
-
+% For GPS and UTM conversions.
+[deg2utm_speZone, utm2deg_speZone] ...
+    = genUtmConvertersForFixedZone(simConfigs.UTM_ZONE);
 % Store these functions in simConfigs.
 simConfigs.deg2utm_speZone = deg2utm_speZone;
 simConfigs.utm2deg_speZone = utm2deg_speZone;
