@@ -42,7 +42,7 @@ else
     % not be set and we will run the simulation for a scenario defined
     % below in this script. Please refer to the Simulation Configurations
     % section for the supported presets.
-    PRESET = 'US41_InShadowSeg_South_DecToMar';
+    PRESET = 'US41_InShadowSeg_Hori_DecToMar';
 end
 
 %% Script Parameters
@@ -189,6 +189,18 @@ switch PRESET
             39.53053164039784, -87.403826043443; ...
             39.5302992981773, -87.40394696741747];
         simConfigs.GRID_RESOLUTION_IN_M = 3;
+    case 'US41_InShadowSeg_Hori_DecToMar'
+        %   - A test segment going from east to west on US 41 where a lot
+        %   of trees are present on both road sides.
+        simConfigs.LAT_LON_BOUNDARY_OF_INTEREST ...
+            = [39.73208994676185, -87.29035578358973; ...
+            39.73208916581103, -87.29061625684196; ...
+            39.73217926664604, -87.29061671015452; ...
+            39.73218005365688, -87.29035421533241; ...
+            39.7321717976775, -87.29000668309655; ...
+            39.73208173878243, -87.2900102720933; ...
+            39.73208994676185, -87.29035578358973];
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
     case 'US41_HalfShadowSeg_DecToMar'
         %   - A test segment on US 41 where some trees are present on both
         %   road sides.
@@ -284,6 +296,7 @@ simConfigs.MIN_PROGRESS_RATIO_TO_REPORT = 0.05;
 %   essentially constructed via something like:
 %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
 decToMarPresetsCell = {'US41_InShadowSeg_DecToMar', ...
+    'US41_InShadowSeg_Hori_DecToMar', ...
     'US41_InShadowSeg_North_DecToMar', ...
     'US41_InShadowSeg_South_DecToMar', ...
     'US41_HalfShadowSeg_DecToMar', 'US41_UnderSunSeg_DecToMar'};
@@ -299,6 +312,9 @@ elseif any(strcmp(decToMarPresetsCell, PRESET))
     simConfigs.LOCAL_TIME_END = '21-Mar-2021 18:00:00';
     simConfigs.TIME_INTERVAL_IN_M = 15;
     simConfigs.DATE_INTERVAL_IN_D = 7;
+    
+    % We only need to generate the demo video for one day.
+    FLAG_GEN_VIDEO_FOR_ONE_DAY = true;
 else
     simConfigs.LOCAL_TIME_START = datetime('20-Dec-2020 06:00:00');
     simConfigs.LOCAL_TIME_END = datetime('20-Dec-2020 18:00:00');
@@ -1008,6 +1024,9 @@ end
 
 timeToPauseForFigUpdateInS = 0.000001;
 pathToSaveVideo = fullfile(folderToSaveResults, 'shadowLocOverTime');
+if ~exist('FLAG_GEN_VIDEO_FOR_ONE_DAY', 'var')
+    FLAG_GEN_VIDEO_FOR_ONE_DAY = false;
+end
 
 % Only generate the video if it does not exist and if the host is a windows
 % computer.
@@ -1057,6 +1076,13 @@ if ispc && ~exist(pathToSaveVideo, 'file')
                 end
             end
             
+            if FLAG_GEN_VIDEO_FOR_ONE_DAY
+                if curDatetime-simConfigs.localDatetimesToInspect ...
+                        > days(1)
+                    break
+                end
+            end
+            
             % Update the figure.
             deleteHandles(hsShadowMap);
             
@@ -1073,14 +1099,17 @@ if ispc && ~exist(pathToSaveVideo, 'file')
             
             lastDatetime = curDatetime;
         end
-        % Output the last frame and close the video writer.
-        for curSimTimeInS ...
-                = lastDatetime:seconds(1) ...
-                :(simConfigs.LOCAL_TIME_END-seconds(1))
-            elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
-            if elapsedSimTimeInS>=simTimeLengthPerFrameInS
-                writeVideo(curVideoWriter, getframe(hFigShadowLoc));
-                lastSimTime = curSimTimeInS;
+        
+        if ~FLAG_GEN_VIDEO_FOR_ONE_DAY
+            % Output the last frame and close the video writer.
+            for curSimTimeInS ...
+                    = lastDatetime:seconds(1) ...
+                    :(simConfigs.LOCAL_TIME_END-seconds(1))
+                elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
+                if elapsedSimTimeInS>=simTimeLengthPerFrameInS
+                    writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+                    lastSimTime = curSimTimeInS;
+                end
             end
         end
     catch err
