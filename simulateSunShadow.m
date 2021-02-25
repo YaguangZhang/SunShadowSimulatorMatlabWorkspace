@@ -1065,6 +1065,13 @@ if ispc && ~exist(pathToSaveVideo, 'file')
             curDatetime ...
                 = simConfigs.localDatetimesToInspect(curIdxDatetime);
             
+            if FLAG_GEN_VIDEO_FOR_ONE_DAY
+                if curDatetime-simConfigs.localDatetimesToInspect(1) ...
+                        > days(1)
+                    break
+                end
+            end
+            
             % Output the video.
             lastSimTime = lastDatetime;
             for curSimTimeInS ...
@@ -1073,13 +1080,6 @@ if ispc && ~exist(pathToSaveVideo, 'file')
                 if elapsedSimTimeInS>=simTimeLengthPerFrameInS
                     writeVideo(curVideoWriter, getframe(hFigShadowLoc));
                     lastSimTime = curSimTimeInS;
-                end
-            end
-            
-            if FLAG_GEN_VIDEO_FOR_ONE_DAY
-                if curDatetime-simConfigs.localDatetimesToInspect ...
-                        > days(1)
-                    break
                 end
             end
             
@@ -1100,16 +1100,16 @@ if ispc && ~exist(pathToSaveVideo, 'file')
             lastDatetime = curDatetime;
         end
         
-        if ~FLAG_GEN_VIDEO_FOR_ONE_DAY
-            % Output the last frame and close the video writer.
-            for curSimTimeInS ...
-                    = lastDatetime:seconds(1) ...
-                    :(simConfigs.LOCAL_TIME_END-seconds(1))
-                elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
-                if elapsedSimTimeInS>=simTimeLengthPerFrameInS
-                    writeVideo(curVideoWriter, getframe(hFigShadowLoc));
-                    lastSimTime = curSimTimeInS;
-                end
+        % Output the last frame and close the video writer.
+        for curSimTimeInS ...
+                = lastDatetime:seconds(1):(min( ...
+                lastDatetime+minutes(simConfigs.TIME_INTERVAL_IN_M), ...
+                simConfigs.localDatetimesToInspect(end)) ...
+                - seconds(1))
+            elapsedSimTimeInS = seconds(curSimTimeInS-lastSimTime);
+            if elapsedSimTimeInS>=simTimeLengthPerFrameInS
+                writeVideo(curVideoWriter, getframe(hFigShadowLoc));
+                lastSimTime = curSimTimeInS;
             end
         end
     catch err
