@@ -642,7 +642,7 @@ else
     save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
 end
 
-disp(['        [', datestr(now, datetimeFormat), ...
+disp(['    [', datestr(now, datetimeFormat), ...
     '] Done!'])
 
 %% Simulation Overview Plot
@@ -662,7 +662,7 @@ end
 %% Simulation: Sunrise and Sunset Times
 
 disp(' ')
-disp(['        [', datestr(now, datetimeFormat), ...
+disp(['    [', datestr(now, datetimeFormat), ...
     '] Computing sun positions in the daytime ...'])
 % We will go through each day to inspect, each datetime to inspect in that
 % day, and each grid location to inspect.
@@ -850,13 +850,12 @@ for idxDay = 1:totalNumOfDays
         end
     end
 end
-disp(['        [', datestr(now, datetimeFormat), ...
-    '] Done!'])
+disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
 %% Simulation: Locs in the Sun
 
 disp(' ')
-disp(['        [', datestr(now, datetimeFormat), ...
+disp(['    [', datestr(now, datetimeFormat), ...
     '] Locating spots in the sun ', ...
     'and computing their uniform sun powers ...'])
 totalNumOfLocTimePairs = ...
@@ -1003,7 +1002,7 @@ for idxLoc = indicesLocToProcess
     end
 end
 
-disp(['        [', datestr(now, datetimeFormat), ...
+disp(['    [', datestr(now, datetimeFormat), ...
     '] Done!'])
 
 %% Visualization: 3D LiDAR Plots for Debugging
@@ -1032,7 +1031,7 @@ end
 % computer.
 if ispc && ~exist(pathToSaveVideo, 'file')
     disp(' ')
-    disp(['        [', datestr(now, datetimeFormat), ...
+    disp(['    [', datestr(now, datetimeFormat), ...
         '] Generating illustration video clip for shadow location ...'])
     
     % Video parameters.
@@ -1044,11 +1043,11 @@ if ispc && ~exist(pathToSaveVideo, 'file')
         'is an integer!']);
     
     % Plot the background.
-    matRxLonLatWithPathLoss = [simConfigs.gridLatLonPts(:,[2,1]), ...
+    matRxLonLatWithSunPower = [simConfigs.gridLatLonPts(:,[2,1]), ...
         simState.uniformSunPower(:,1)];
     sunAziZens = [simState.sunAzis(:,1), simState.sunZens(:,1)];
     [hFigShadowLoc, hsShadowMap] = ...
-        plotSunShadowMap(matRxLonLatWithPathLoss, simConfigs, sunAziZens);
+        plotSunShadowMap(matRxLonLatWithSunPower, simConfigs, sunAziZens);
     lastDatetime = simConfigs.localDatetimesToInspect(1);
     title(datestr(lastDatetime, datetimeFormat));
     drawnow; pause(timeToPauseForFigUpdateInS);
@@ -1086,13 +1085,13 @@ if ispc && ~exist(pathToSaveVideo, 'file')
             % Update the figure.
             deleteHandles(hsShadowMap);
             
-            matRxLonLatWithPathLoss ...
+            matRxLonLatWithSunPower ...
                 = [simConfigs.gridLatLonPts(:,[2,1]), ...
                 simState.uniformSunPower(:,curIdxDatetime)];
             sunAziZens = [simState.sunAzis(:,curIdxDatetime), ...
                 simState.sunZens(:,curIdxDatetime)];
             [hFigShadowLoc, hsShadowMap] = ...
-                plotSunShadowMap(matRxLonLatWithPathLoss, ...
+                plotSunShadowMap(matRxLonLatWithSunPower, ...
                 simConfigs, sunAziZens, hFigShadowLoc);
             title(datestr(curDatetime, datetimeFormat));
             drawnow; pause(timeToPauseForFigUpdateInS);
@@ -1124,27 +1123,50 @@ if ispc && ~exist(pathToSaveVideo, 'file')
     end
     close(curVideoWriter);
     
-    disp(['        [', datestr(now, datetimeFormat), ...
-        '] Done!'])
+    disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 end
 
 %% Statistics: Sun Engergy
+% Note that we only consider the direct sun radiation.
 
-disp(' ')
-disp(['        [', datestr(now, datetimeFormat), ...
-    '] Computing the sun energies ...'])
-disp(['        [', datestr(now, datetimeFormat), ...
-    '] Done!'])
-
-disp(['    [', datestr(now, datetimeFormat), '] Done!'])
+if ~isfield(simState, 'dailyUniformSunEnergy')
+    disp(' ')
+    disp(['    [', datestr(now, datetimeFormat), ...
+        '] Computing the sun energies ...'])    
+    
+    [simState.dailyUniformSunEnergy, ...
+        simState.dailyUniformSunEnergyDates] ...
+        = computeDailyUniformSunEnergy(simState.uniformSunPower, ...
+        simConfigs.localDatetimesToInspect);
+    % Update both the simulation results in the history .mat file, just in
+    % case.
+    disp(['        [', datestr(now, datetimeFormat), ...
+        '] Saving results ...']) 
+    save(dirToSaveSimState, 'simConfigs', 'simState');
+    
+    disp(['        [', datestr(now, datetimeFormat), ...
+        '] Generating figures ...']) 
+    debugResultsDir = fullfile(folderToSaveResults, ...
+        'debugDailySunEnergy');
+    if ~exist(debugResultsDir, 'dir')
+        mkdir(debugResultsDir);
+    end
+    
+    pathToSaveVideo = fullfile(folderToSaveResults, ...
+        'unifSunPowerOverTime');
+    if ispc && ~exist(pathToSaveVideo, 'file')
+        % Generate a video for debugging.
+        genVideoForUnifSunPower;
+    end
+    
+    disp(['    [', datestr(now, datetimeFormat), '] Done!'])
+end
 
 %% Cleanup
 
 disp(' ')
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Finishing simulation ...'])
-% Update the simulation results in the history .mat file, just in case.
-save(dirToSaveSimState, 'simConfigs', 'simState', '-append');
 close all;
 disp(['        [', datestr(now, datetimeFormat), ...
     '] Done!'])

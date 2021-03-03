@@ -4,7 +4,10 @@
 % Yaguang Zhang, Purdue, 02/11/2021
 
 timeToPauseForFigUpdateInS = 0.000001;
-pathToSaveVideo = fullfile(folderToSaveResults, 'unifSunPowerOverTime');
+if ~exist('pathToSaveVideo', 'var')
+    pathToSaveVideo = fullfile(folderToSaveResults, ...
+        'unifSunPowerOverTime');
+end
 if ~exist('FLAG_GEN_VIDEO_FOR_ONE_DAY', 'var')
     FLAG_GEN_VIDEO_FOR_ONE_DAY = false;
 end
@@ -18,12 +21,20 @@ assert(floor(simTimeLengthPerFrameInS)==simTimeLengthPerFrameInS, ...
     'is an integer!']);
 
 % Plot the background.
-sz = 10;
 hSunPower = figure;
-hScatter = scatter(simConfigs.gridLatLonPts(:,2), ...
-    simConfigs.gridLatLonPts(:,1), ...
-    sz, [simState.uniformSunPower(:,1), ...
-    zeros(size(simConfigs.gridLatLonPts, 1), 2)], 'filled');
+% Inverse hot color map: colormap(flipud(hot));
+colormap parula;
+curCAxis = [0,1];
+
+numOfPtsPerSide = 32;
+surfOpts = {'EdgeColor', 'interp', 'FaceAlpha', 0.9};
+matRxLonLatWithSunPower = [simConfigs.gridLatLonPts(:,[2,1]), ...
+    simState.uniformSunPower(:,1)];
+hSunPowerSurf = gridDataSurf( ...
+    matRxLonLatWithSunPower, numOfPtsPerSide, ...
+    surfOpts{:});
+caxis(curCAxis);
+
 plot_google_map('MapType', 'hybrid');
 xticks([]); yticks([]); view(2);
 
@@ -62,12 +73,15 @@ try
         end
         
         % Update the figure.
-        deleteHandles(hScatter);
+        deleteHandles(hSunPowerSurf);
         
-        hScatter = scatter(simConfigs.gridLatLonPts(:,2), ...
-            simConfigs.gridLatLonPts(:,1), ...
-            sz, [simState.uniformSunPower(:, curIdxDatetime), ...
-            zeros(size(simConfigs.gridLatLonPts, 1), 2)], 'filled');
+        matRxLonLatWithSunPower = [simConfigs.gridLatLonPts(:,[2,1]), ...
+            simState.uniformSunPower(:,curIdxDatetime)];
+        hSunPowerSurf = gridDataSurf( ...
+            matRxLonLatWithSunPower, numOfPtsPerSide, ...
+            surfOpts{:});
+        caxis(curCAxis);
+        
         title(datestr(curDatetime, datetimeFormat));
         drawnow; pause(timeToPauseForFigUpdateInS);
         
