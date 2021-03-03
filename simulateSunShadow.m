@@ -695,7 +695,7 @@ for idxDay = 1:totalNumOfDays
     indicesTimesToInspect = find(simState.dayLabels==idxDay);
     
     % Process locations one by one.
-    numOfLocsProcessed = 0;
+    numOfLocDatePairsProcessed = 0;
     clearvars curEle;
     for idxLoc = 1:totalNumOfLocs
         curXY = simConfigs.gridXYPts(idxLoc, :);
@@ -826,11 +826,11 @@ for idxDay = 1:totalNumOfDays
             simState.sunZens(idxLoc, :) = curLocSunZens;
             flagSimStateUpdated = true;
         end
-        numOfLocsProcessed = numOfLocsProcessed+1;
+        numOfLocDatePairsProcessed = numOfLocDatePairsProcessed+1;
         % Report the progress regularly. Note that we are interested in the
         % overall progress, so the number of dates needs to be considered,
         % too.
-        if numOfLocsProcessed/totalNumOfLocs ...
+        if numOfLocDatePairsProcessed/totalNumOfLocs ...
                 > simConfigs.MIN_PROGRESS_RATIO_TO_REPORT*totalNumOfDays
             % Also take the chance to update the history results if
             % necessary. Note that this attempt may miss the last save
@@ -848,7 +848,7 @@ for idxDay = 1:totalNumOfDays
                 ((idxDay-1)*totalNumOfLocs+idxLoc) ...
                 /(totalNumOfLocs*totalNumOfDays)*100, '%.2f'), '%) ...'])
             
-            numOfLocsProcessed = 0;
+            numOfLocDatePairsProcessed = 0;
         end
         if idxLoc == totalNumOfLocs
             % Also take the chance to update the history results if
@@ -875,10 +875,6 @@ disp(' ')
 disp(['    [', datestr(now, datetimeFormat), ...
     '] Locating spots in the sun ', ...
     'and computing their uniform sun powers ...'])
-totalNumOfLocTimePairs = ...
-    simState.numOfGridPts*simState.numOfTimesToInspect;
-curNumOfLocTimePairsProcessed = 0;
-numOfLocTimePairsProcessed = 0;
 
 % We only need to do the simulation if it was not completed before.
 indicesLocToProcess = 1:simState.numOfGridPts;
@@ -888,16 +884,19 @@ if isfield(simState, 'flagShadowLocated')
     end
 end
 
+totalNumOfLocs = length(indicesLocToProcess);
+curNumOfLocProcessed = 0;
+numOfLocsProcessed = 0;
 for idxLoc = indicesLocToProcess
     % Report progress regularly.
-    if curNumOfLocTimePairsProcessed == 0
+    if curNumOfLocProcessed == 0
         disp(['            [', ...
             datestr(now, datetimeFormat), ...
-            '] Location and time pair ', ...
-            num2str(numOfLocTimePairsProcessed), '/', ...
-            num2str(totalNumOfLocTimePairs), ' (', ...
+            '] Location ', ...
+            num2str(numOfLocsProcessed), '/', ...
+            num2str(totalNumOfLocs), ' (', ...
             num2str( ...
-            numOfLocTimePairsProcessed/totalNumOfLocTimePairs*100, ...
+            numOfLocsProcessed/totalNumOfLocs*100, ...
             '%.2f'), '%) ...'])
     end
     
@@ -996,21 +995,19 @@ for idxLoc = indicesLocToProcess
             = curLocUniformSunPowersSeg;
     end
     
-    curNumOfLocTimePairsProcessed = ...
-        curNumOfLocTimePairsProcessed+simState.numOfTimesToInspect;
-    numOfLocTimePairsProcessed = ...
-        numOfLocTimePairsProcessed+simState.numOfTimesToInspect;
+    curNumOfLocProcessed = curNumOfLocProcessed + 1;
+    numOfLocsProcessed = numOfLocsProcessed + 1;
     
     % For progress reporting. Note that we are interested in the overall
     % progress, so the number of dates needs to be considered, too.
-    if curNumOfLocTimePairsProcessed/totalNumOfLocTimePairs ...
-            > simConfigs.MIN_PROGRESS_RATIO_TO_REPORT*totalNumOfDays
-        curNumOfLocTimePairsProcessed = 0;
+    if curNumOfLocProcessed/totalNumOfLocs ...
+            > simConfigs.MIN_PROGRESS_RATIO_TO_REPORT
+        curNumOfLocProcessed = 0;
         % Also take the chance to update the history results.
         save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
     end
     
-    if numOfLocTimePairsProcessed == totalNumOfLocTimePairs
+    if numOfLocsProcessed == totalNumOfLocs
         % All done. Save the results.
         simState.flagShadowLocated = true;
         save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
