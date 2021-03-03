@@ -22,7 +22,6 @@ curFileName = mfilename;
 
 prepareSimulationEnv;
 
-flagInitiatedByRoadSimManager = true;
 PRESET = 'U41_TerreHauteToRockville';
 
 %% Script Parameters
@@ -31,9 +30,10 @@ PRESET = 'U41_TerreHauteToRockville';
 folderToSaveResults = fullfile(ABS_PATH_TO_SHARED_FOLDER, ...
     'SunShadowSimulatorResults', ['RoadSimSeries_', PRESET]);
 
+utmZone = '16 T';
 % This is needed for creating the converters in
 % constructUtmRoadSegPolygon.m.
-simConfigs.UTM_ZONE = '16 T';
+simConfigs.UTM_ZONE = utmZone;
 
 %% Simulation Manager Configurations
 
@@ -77,7 +77,7 @@ switch PRESET
         %   - The zone label to use in the UTM (x, y) system. Note: this
         %   will be used for preprocessing the LiDAR data, too; so if it
         %   changes, the history LiDAR data will become invalid.
-        simManConfigs.UTM_ZONE = '16 T';
+        simManConfigs.UTM_ZONE = utmZone;
     otherwise
         error(['Unsupported preset "', PRESET, '"!'])
 end
@@ -200,6 +200,43 @@ else
     
     save(dirToSaveSimManState, 'simManState', '-v7.3');
 end
+
+% Settings for the pre-scan simulation.
+if(~isfield(simManState, 'latLonPtsOfInterestForPreScan'))
+    disp(['        [', datestr(now, datetimeFormat), ...
+        '] Configuring the pre-scan simulation ...'])
+    
+    numOfSimRoadSegs = length(simManState.utmXYBoundariesOfInterest);
+    % If there are multiple lanes which result in multiple regions, we will
+    % include one point to inspect in the pre-scan simulation for each
+    % region. We will also keep track of the corresponding road
+    % segment/simualtion indices.
+    [latLonPtsOfInterestForPreScan, ...
+        latLonPtsOfInterestForPreScanSimIndices] ...
+        = deal(cell(numOfSimRoadSegs, 1));
+    for idxSimRoadSeg = 1:numOfSimRoadSegs
+        curUtmXYBound ...
+            = simManState.utmXYBoundariesOfInterest{idxSimRoadSeg};
+        curUtmXYBoundRegions = regions(polyshape(curUtmXYBound));
+        
+        [centroidXs, centroidYs] = centroid(curUtmXYBoundRegions);
+        [centroidLats, centroidLons] ...
+            = utm2deg_speZone(centroidXs, centroidYs);
+        
+        latLonPtsOfInterestForPreScan{idxSimRoadSeg} ...
+            = [centroidLats, centroidLons];
+        latLonPtsOfInterestForPreScanSimIndices{idxSimRoadSeg} ...
+            = ones(length(curUtmXYBoundRegions), 1).*idxSimRoadSeg;
+    end
+    
+    simManState.latLonPtsOfInterestForPreScan ...
+        = vertcat(latLonPtsOfInterestForPreScan{:});
+    simManState.latLonPtsOfInterestForPreScanSimIndices ...
+        = vertcat(latLonPtsOfInterestForPreScanSimIndices{:});
+    simManState.folderToSavePreScanSimResults = 'preScanSim';
+    save(dirToSaveSimManState, 'simManState', '-v7.3');
+end
+
 disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
 %% Generate Overview Plots
@@ -220,6 +257,16 @@ plot_google_map('MapType', 'hybrid');
 saveas(hFigRoadSegOfInterest, [dirToSaveFigRoadSegOfInterest, '.fig']);
 saveas(hFigRoadSegOfInterest, [dirToSaveFigRoadSegOfInterest, '.jpg']);
 
+% The points of interest for the pre-scan simualtion on map.
+dirToSaveFigPreScanPts ...
+    = fullfile(folderToSaveResults, 'preScanPts');
+hFigPreScanPts = figure;
+plot(simManState.latLonPtsOfInterestForPreScan(:,2), ...
+    simManState.latLonPtsOfInterestForPreScan(:,1), '.r');
+plot_google_map('MapType', 'hybrid');
+saveas(hFigPreScanPts, [dirToSaveFigPreScanPts, '.fig']);
+saveas(hFigPreScanPts, [dirToSaveFigPreScanPts, '.jpg']);
+
 % All the simulation segments on map.
 dirToSaveFigSimRoadSegs ...
     = fullfile(folderToSaveResults, 'roadSegsForSim');
@@ -238,7 +285,50 @@ saveas(hFigSimRoadSegs, [dirToSaveFigSimRoadSegs, '.jpg']);
 
 disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 
+%% Pre-Scan Simulations
+
+if ~isfield(simManState, 'dailyUniformSunEnergyForPreScanSim')
+    disp(' ')
+    disp(fileNameHintRuler)
+    disp(['    [', datestr(now, datetimeFormat), ...
+        '] Conducting pre-scan simulation ...'])
+    disp(fileNameHintRuler)
+    disp(' ')
+    % Set this properly to inform simulateSunShadow about what simualtion
+    % to carry out.
+    %   - 1/true
+    %     Run a detailed simulation for the next road segment polygon of
+    %     interest.
+    %   - 2
+    %     Run a pre-scan simulation to determine which polygons could be
+    %     ignored.
+    idxSim = 0; %#ok<NASGU>
+    flagInitiatedByRoadSimManager = 2; %#ok<NASGU>
+    diary off;
+    simulateSunShadow;
+    diary(dirToSaveManDiary);
+    
+    % Cache the sun energy results.
+    simManState.dailyUniformSunEnergyForPreScanSim ...
+        = simState.dailyUniformSunEnergy;
+    simManState.dailyUniformSunEnergyDatesForPreScanSim ...
+        = simState.dailyUniformSunEnergyDates;
+    save(dirToSaveSimManState, 'simManState', '-v7.3');
+    
+    disp(['    [', datestr(now, datetimeFormat), ...
+        '] Generating plots for the pre-scan simulation ...'])
+    
+    % Energy over dist for the first day.
+    
+    % Empirical CDF.
+    
+    
+    disp(['    [', datestr(now, datetimeFormat), '] Done!'])
+end
+
 %% Run the Simulations
+
+flagInitiatedByRoadSimManager = true;
 
 disp(' ')
 disp(['    [', datestr(now, datetimeFormat), ...
@@ -252,7 +342,7 @@ for idxSim = 1:numOfSimSeries
         disp(' ')
         disp(fileNameHintRuler)
         disp(['        [', datestr(now, datetimeFormat), ...
-            '] Conducting simulation series #', num2str(idxSim), '...'])
+            '] Conducting simulation series #', num2str(idxSim), ' ...'])
         disp(fileNameHintRuler)
         disp(' ')
         diary off;
