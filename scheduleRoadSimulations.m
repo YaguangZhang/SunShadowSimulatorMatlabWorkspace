@@ -318,10 +318,77 @@ if ~isfield(simManState, 'dailyUniformSunEnergyForPreScanSim')
     disp(['    [', datestr(now, datetimeFormat), ...
         '] Generating plots for the pre-scan simulation ...'])
     
-    % Energy over dist for the first day.
+    % Energy over distance for the first day.
+    firstDayEs = simManState.dailyUniformSunEnergyForPreScanSim(:,1);
+    firstDayEs = arrayfun(@(idx) ...
+        min(firstDayEs( ...
+        simManState.latLonPtsOfInterestForPreScanSimIndices==idx ...
+        )), 1:max(simManState.latLonPtsOfInterestForPreScanSimIndices))';
+    firstDayDate = simManState.dailyUniformSunEnergyDatesForPreScanSim(1);
+    firstDayDateStr = datestr(firstDayDate);
+    distsInKm = ...
+        (1:max(simManState.latLonPtsOfInterestForPreScanSimIndices))' ...
+        .*simManConfigs.MAX_ROAD_SEG_LENGTH_PER_SIM_IN_M./1000;
+    
+    dirToSaveFigFirstDayEnergyOverDist ...
+        = fullfile(folderToSaveResults, 'firstDayEnergyOverDist');
+    hFigFirstDayEnergyOverDist = figure;
+    plot(distsInKm, firstDayEs, '.-b');
+    grid on; grid minor; axis tight;
+    xlabel('Distance (km)'); ylabel('Uniform Sun Energy');
+    title(firstDayDateStr);
+    saveas(hFigFirstDayEnergyOverDist, ...
+        [dirToSaveFigFirstDayEnergyOverDist, '.fig']);
+    saveas(hFigFirstDayEnergyOverDist, ...
+        [dirToSaveFigFirstDayEnergyOverDist, '.jpg']);
+    
+    % Energy on hybrid map for the first day.
+    dirToSaveFigFirstDayEnergyOnMap ...
+        = fullfile(folderToSaveResults, 'firstDayEnergyOnMap');
+    hFigFirstDayEnergyOnMap = figure;
+    plot3k([simManState.latLonPtsOfInterestForPreScan(:,2), ...
+        simManState.latLonPtsOfInterestForPreScan(:,1), ...
+        simManState.dailyUniformSunEnergyForPreScanSim(:,1)]);
+    plot_google_map('MapType', 'hybrid'); view(2);
+    xlabel('Longtitude'); ylabel('Latitude');
+    title('Uniform Sun Energy for First Day of Interest');
+    saveas(hFigFirstDayEnergyOnMap, ...
+        [dirToSaveFigFirstDayEnergyOnMap, '.fig']);
+    saveas(hFigFirstDayEnergyOnMap, ...
+        [dirToSaveFigFirstDayEnergyOnMap, '.jpg']);
     
     % Empirical CDF.
+    [cdfs, unifEnergyLevels] = ecdf(firstDayEs);
     
+    dirToSaveFigFirstDayEnergyECDF ...
+        = fullfile(folderToSaveResults, 'firstDayEnergyECDF');
+    hFigFirstDayEnergyECDF = figure;
+    plot(unifEnergyLevels, cdfs, '.-b');
+    grid on; grid minor; axis tight;
+    xlabel('Uniform Sun Energy'); ylabel('Empirical CDF');
+    saveas(hFigFirstDayEnergyECDF, ...
+        [dirToSaveFigFirstDayEnergyECDF, '.fig']);
+    saveas(hFigFirstDayEnergyECDF, ...
+        [dirToSaveFigFirstDayEnergyECDF, '.jpg']);
+    
+    % Worst 10% locations on hybrid map.
+    maxELevelToKeep = interp1(cdfs, unifEnergyLevels, 0.1);
+    indicesLatLonsToShow = find(firstDayEs<=maxELevelToKeep);
+    latLonsToShow = simManState.latLonPtsOfInterestForPreScan( ...
+        ismember(simManState.latLonPtsOfInterestForPreScanSimIndices, ...
+        indicesLatLonsToShow), :);
+    
+    dirToSaveFigWorstTenPercLocs ...
+        = fullfile(folderToSaveResults, 'worstTenPercLocs');
+    hFigWorstTenPercLocs = figure;
+    plot(latLonsToShow(:,2), latLonsToShow(:,1), '.r');
+    plot_google_map('MapType', 'hybrid');
+    xlabel('Longtitude'); ylabel('Latitude');
+    title('Worst 10% Locations in Pre-Scan Simulation');
+    saveas(hFigWorstTenPercLocs, ...
+        [dirToSaveFigWorstTenPercLocs, '.fig']);
+    saveas(hFigWorstTenPercLocs, ...
+        [dirToSaveFigWorstTenPercLocs, '.jpg']);
     
     disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 end
