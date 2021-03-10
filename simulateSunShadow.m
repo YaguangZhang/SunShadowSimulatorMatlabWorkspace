@@ -12,6 +12,9 @@
 % simConfigs and simState, respectively. Please refer to the comments in
 % this file for more details.
 %
+% Note that we have been using the terms "uniform" sun power/energy in this
+% script, but "normalized" is more appropriate.
+%
 % Yaguang Zhang, Purdue, 11/24/2020
 
 % Avoid clearing (1) required variables by the simulation manager, and (2)
@@ -50,7 +53,7 @@ else
     % not be set and we will run the simulation for a scenario defined
     % below in this script. Please refer to the Simulation Configurations
     % section for the supported presets.
-    PRESET = 'US41_InShadowSeg_Hori_DecToMar';
+    PRESET = 'PurdueBellTower';
 end
 
 %% Script Parameters
@@ -130,6 +133,12 @@ switch PRESET
             = constructUtmRectanglePolyMat(...
             [40.428530, -86.913961; 40.429744, -86.912143]);
         simConfigs.GRID_RESOLUTION_IN_M = 1.5;
+    case 'PurdueBellTower'
+        %   - Bell Tower
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRectanglePolyMat(...
+            [40.426705, -86.913239; 40.427890, -86.914938]);
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
     case 'SR53_Seg_Test_Loc_3'
         %   - A test road segment on SR 53. To save the execution time in
         %   the user setting section, we will here cache the command for

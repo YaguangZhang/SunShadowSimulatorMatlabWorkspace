@@ -9,6 +9,9 @@
 % variables simManConfigs and simManState, respectively. Please refer to
 % the comments in this file for more details.
 %
+% Note that we have been using the terms "uniform" sun power/energy in this
+% script, but "normalized" is more appropriate.
+%
 % Yaguang Zhang, Purdue, 02/06/2021
 
 % Avoid clearing big static variables.
