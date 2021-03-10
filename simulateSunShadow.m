@@ -53,7 +53,7 @@ else
     % not be set and we will run the simulation for a scenario defined
     % below in this script. Please refer to the Simulation Configurations
     % section for the supported presets.
-    PRESET = 'PurdueBellTower';
+    PRESET = 'PurdueVossModel';
 end
 
 %% Script Parameters
@@ -138,6 +138,12 @@ switch PRESET
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = constructUtmRectanglePolyMat(...
             [40.426705, -86.913239; 40.427890, -86.914938]);
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
+    case 'PurdueVossModel'
+        %   - Bell Tower
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = constructUtmRectanglePolyMat(...
+            [40.421134, -86.921930; 40.422334, -86.923715]);
         simConfigs.GRID_RESOLUTION_IN_M = 3;
     case 'SR53_Seg_Test_Loc_3'
         %   - A test road segment on SR 53. To save the execution time in
