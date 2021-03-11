@@ -1174,21 +1174,17 @@ if ~isfield(simState, 'dailyUniformSunEnergy')
         '] Saving results ...'])
     save(dirToSaveSimState, 'simConfigs', 'simState', '-v7.3');
     
-    disp(['        [', datestr(now, datetimeFormat), ...
-        '] Generating figures ...'])
-    debugResultsDir = fullfile(folderToSaveResults, ...
-        'debugDailySunEnergy');
-    if ~exist(debugResultsDir, 'dir')
-        mkdir(debugResultsDir);
-    end
-    
-    pathToSaveVideo = fullfile(folderToSaveResults, ...
-        'unifSunPowerOverTime');
-    if ispc && ~exist(pathToSaveVideo, 'file')
-        % Generate a video for debugging.
-        genVideoForUnifSunPower;
-    end
-    
+    disp(['    [', datestr(now, datetimeFormat), '] Done!'])
+end
+
+pathToSaveVideo = fullfile(folderToSaveResults, ...
+    'unifSunPowerOverTime');
+if ispc && ~exist(pathToSaveVideo, 'file')
+    disp(' ')
+    disp(['    [', datestr(now, datetimeFormat), ...
+        '] Generating video clip for the sun power ...'])
+    % Generate a video for debugging.
+    genVideoForUnifSunPower;
     disp(['    [', datestr(now, datetimeFormat), '] Done!'])
 end
 
