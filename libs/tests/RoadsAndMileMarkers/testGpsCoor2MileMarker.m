@@ -2,6 +2,15 @@
 %
 % Yaguang Zhang, Purdue, 02/03/2021
 
+close all; clc;
+
+% Changed folder to the root Matlab script foler first.
+cd(fullfile(fileparts(which(mfilename)), '..', '..', '..'));
+% Set path.
+setPath;
+
+%% Load INDOT data sets
+
 loadIndotRoads;
 loadIndotMileMarkers;
 
