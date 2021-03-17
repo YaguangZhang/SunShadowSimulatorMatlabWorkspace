@@ -211,19 +211,19 @@ for idxPreset = 1:length(presetsInfo.simLabels)
     %   corresponding area of interest.
     idxPreset = find(strcmp(presetsInfo.simLabels, PRESET));
     if ~isempty(idxPreset) && length(idxPreset)==1
-            %   - Load the area of interest.
-            simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-                = presetsInfo.boundOfIntUtmXYs{idxPreset};
-            %   - The time range of interest to inspect. The datetime for
-            %   this is specified in terms of the local time without a time
-            %   zone. The time zone will be derived from
-            %   simConfigs.UTM_ZONE. The times to inspect are essentially
-            %   constructed via something like:
-            %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
-            [simConfigs.LOCAL_TIME_START, simConfigs.LOCAL_TIME_END] ...
-                = deal(presetsInfo.datetimesLocal{idxPreset});
-            else
-            error(['Unsupported preset "', PRESET, '"!'])
+        %   - Load the area of interest.
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = presetsInfo.boundOfIntUtmXYs{idxPreset};
+        %   - The time range of interest to inspect. The datetime for this
+        %   is specified in terms of the local time without a time zone.
+        %   The time zone will be derived from simConfigs.UTM_ZONE. The
+        %   times to inspect are essentially constructed via something
+        %   like:
+        %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
+        [simConfigs.LOCAL_TIME_START, simConfigs.LOCAL_TIME_END] ...
+            = deal(presetsInfo.datetimesLocal{idxPreset});
+    else
+        error(['Unsupported preset "', PRESET, '"!'])
     end
     
     %   - We will use this spacial resolution to construct the inspection
@@ -1119,6 +1119,76 @@ for idxPreset = 1:length(presetsInfo.simLabels)
         '] Done!'])
     
     diary off;
+    
+    %% Create a Comparison Figure with the Original Photo
+    curDirToJpg = presetsInfo.dirToJpgs{idxPreset};
+    [curDirToCompFigFolderPath, curCompFigName, ~] ...
+        = fileparts(curDirToJpg);
+    curPathToSaveCompFig = fullfile(curDirToCompFigFolderPath, ...
+        [curCompFigName, '_Comp']);
+    
+    curBoundOfIntUtmXYs = presetsInfo.boundOfIntUtmXYs{idxPreset};
+    [curBoundOfIntLats, curBoundOfIntLons] ...
+        = simConfigs.utm2deg_speZone( ...
+        curBoundOfIntUtmXYs(:, 1), curBoundOfIntUtmXYs(:, 2));
+    curCameraLatLon = presetsInfo.cameraLatLonHs(idxPreset, 1:2);
+    curTargetLatLon = presetsInfo.targetLatLons(idxPreset, :);
+    curSimLabel = presetsInfo.simLabels{idxPreset};
+    curDatetimeLocal = presetsInfo.datetimesLocal{idxPreset};
+    
+    [curCameraX, curCameraY] = simConfigs.deg2utm_speZone( ...
+        curCameraLatLon(1), curCameraLatLon(2));
+    [curTargetX, curTargetY] = simConfigs.deg2utm_speZone( ...
+        curTargetLatLon(1), curTargetLatLon(2));
+    
+    estiLidarZFct = scatteredInterpolant(simConfigs.gridXYPts(:,1), ...
+        simConfigs.gridXYPts(:,2), simState.gridLidarZs);
+    curCameraZ = estiLidarZFct(curCameraX, curCameraY);
+    curTargetZ = estiLidarZFct(curTargetX, curTargetY);
+    
+    curCameraHInM = presetsInfo.cameraLatLonHs(idxPreset, 3);
+    curCamCenteredLidarXYZs = [simConfigs.gridXYPts(:,1) - curCameraX, ...
+        simConfigs.gridXYPts(:,2) - curCameraY, ...
+        simState.gridLidarZs - curCameraZ - curCameraHInM];
+    
+    % Note that this vector should originate from the center of the plot
+    % box and point toward the camera.
+    curCamViewVectXYZ = -[curTargetX-curCameraX, curTargetY-curCameraY, ...
+        curTargetZ-curCameraZ-curCameraHInM];
+    curCamViewEle = 10;
+    
+    % Use a bigger canvas.
+    hFigComp = figure('units','pixel','outerposition',[0 0 1920 1080]);
+    % Raw image.
+    subplot(2, 2, 1);
+    [rawJpgData, ~] = jpgRead(curDirToJpg);
+    imshow(rawJpgData);
+    % 3D view of the LiDAR data colored by sun power values.
+    subplot(2, 2, 2); hold on;
+    plot3k(curCamCenteredLidarXYZs, 'ColorData', simState.uniformSunPower);
+    [caz,cel] = view(curCamViewVectXYZ);
+    view(caz, curCamViewEle);
+    axis equal; xlabel('x (m)'); ylabel('y (m)'); zlabel('z (m)');
+    title('Estimated Camera Location (red star): (0,0,0)');
+    plot3(0, 0, 0, 'r*');
+    % A map for the location of interest.
+    subplot(2, 2, [3,4]);
+    hold on;
+    hBound = plot(polyshape(curBoundOfIntLons, curBoundOfIntLats), ...
+        'FaceColor', 'y', 'FaceAlpha', 0.1);
+    plot([curCameraLatLon(2), curTargetLatLon(2)], ...
+        [curCameraLatLon(1), curTargetLatLon(1)], '--w');
+    hCam = plot(curCameraLatLon(2), curCameraLatLon(1), 'sg');
+    hTar = plot(curTargetLatLon(2), curTargetLatLon(1), '*r');
+    plot_google_map('MapType', 'hybrid');
+    xticks([]); yticks([]);
+    legend([hCam, hTar, hBound], 'Camera', 'Target', ...
+        'Simulation Area');
+    title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
+        'Interpreter', 'none');
+    
+    saveas(hFigComp, [curPathToSaveCompFig, '.jpg']);
+    saveas(hFigComp, [curPathToSaveCompFig, '.fig']);
 end
 
 % EOF
