@@ -45,11 +45,10 @@ switch lower(info.Make)
             join(arrayfun(@(n) num2str(n), ...
             info.GPSInfo.GPSTimeStamp, 'UniformOutput', false), ':') ...
             ], ''), 'InputFormat', datetimeFormat);
-        % Update: it seems the GPS time is already the local one.
-        %   - Convert the UTC-0 time to the local time.
-        %	zone = -timezone(lon);
-        %       datetimeLocal = utcUnixTimeInS2LocalDatetime( ...
-        %           localDatetime2UtcUnixTimeInS(datetimeLocal,0), zone);
+        % Convert the UTC time to local time.
+        zone = -timezone(lon);
+        datetimeLocal = utcUnixTimeInS2LocalDatetime( ...
+            localDatetime2UtcUnixTimeInS(datetimeLocal,0), zone);
     otherwise
         error(['Unsupported info.Maker "', info.Make, '"!'])
 end
