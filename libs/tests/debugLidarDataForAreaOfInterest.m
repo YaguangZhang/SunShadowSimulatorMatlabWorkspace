@@ -52,8 +52,16 @@ plot3k([simConfigs.gridLatLonPts(boolsNotInfZ,2), ...
     simState.gridLidarZs(boolsNotInfZ)-simState.gridEles(boolsNotInfZ)]);
 plot_google_map('MapType', 'satellite');
 curZLim = zlim; newZLim = [min(curZLim(1), 0) max(curZLim(2), 0)];
-zlim(newZLim); view(2);
+zlim(newZLim); view(2); axisToSetForLidarOverviewFig = axis;
 title('LiDAR z minus Terrain Elevation on Map');
+
+figure; hold on;
+plot3k([simConfigs.gridLatLonPts(boolsNotInfZ,2), ...
+    simConfigs.gridLatLonPts(boolsNotInfZ,1), ...
+    simState.gridLidarZs(boolsNotInfZ)-simState.gridEles(boolsNotInfZ)]);
+curZLim = zlim; newZLim = [min(curZLim(1), 0) max(curZLim(2), 0)];
+zlim(newZLim); view(2); axis(axisToSetForLidarOverviewFig);
+title('LiDAR z minus Terrain Elevation');
 
 %% Save all the figures.
 

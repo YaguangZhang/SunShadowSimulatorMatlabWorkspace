@@ -69,6 +69,8 @@ for idxScenario = 1:numOfScenarios
     curDirsToJpgs = dir(fullfile(curScenarioFolder, '*.jpg'));
     % Get rid of preview figures.
     curDirsToJpgs(endsWith({curDirsToJpgs.name}, '_PreviewMap.jpg')) =[];
+    % Get rid of comparison figures.
+    curDirsToJpgs(endsWith({curDirsToJpgs.name}, '_Comp.jpg')) =[];
     curNumOfPresets = length(curDirsToJpgs);
     
     [dirToJpgsSceCell{idxScenario}, datetimesLocalSceCell{idxScenario}, ...
