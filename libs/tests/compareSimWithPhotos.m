@@ -1167,12 +1167,13 @@ for idxPreset = 1:length(presetsInfo.simLabels)
     imshow(rawJpgData);
     % 3D view of the LiDAR data colored by sun power values.
     subplot(2, 2, 2); hold on;
-    plot3k(curCamCenteredLidarXYZs, 'ColorData', simState.uniformSunPower);
+    plot3k(curCamCenteredLidarXYZs, ...
+        'ColorData', simState.uniformSunPower, ...
+        'Labels', {['Estimated Camera Location (Green Square) ', ...
+        'is Centered at (0,0,0)'], 'x (m)', 'y (m)', 'z (m)', 'Normalized Sun Power'});
     [caz,cel] = view(curCamViewVectXYZ);
-    view(caz, curCamViewEle);
-    axis equal; xlabel('x (m)'); ylabel('y (m)'); zlabel('z (m)');
-    title('Estimated Camera Location (red star): (0,0,0)');
-    plot3(0, 0, 0, 'r*');
+    view(caz, curCamViewEle); axis equal;
+    plot3(0, 0, 0, 'gs');
     % A map for the location of interest.
     subplot(2, 2, [3,4]);
     hold on;
