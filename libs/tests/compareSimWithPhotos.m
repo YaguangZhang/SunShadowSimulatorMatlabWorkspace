@@ -97,6 +97,8 @@ for idxScenario = 1:numOfScenarios
         datetimesLocalSceCell{idxScenario}{curIdxPreset} ...
             = curPhotoDatetime;
         
+        % The GPS information from manually created .csv file is
+        % prioritized.
         if ~isempty(cameraLatLon)
             curCameraLatLon = cameraLatLon;
         end
