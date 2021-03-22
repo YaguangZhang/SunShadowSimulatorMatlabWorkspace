@@ -329,8 +329,18 @@ for idxPreset = 1:length(presetsInfo.simLabels)
         = genUtmConvertersForFixedZone(simConfigs.UTM_ZONE);
     
     if exist(dirToSaveSimState, 'file')
-        load(dirToSaveSimState, 'simConfigs');
-    else
+        try
+            load(dirToSaveSimState, 'simConfigs');
+            simStateLoaded = true;
+        catch err
+            msgText = getReport(err);
+            disp(msgText);
+            
+            simStateLoaded = false;
+        end
+    end
+    
+    if ~simStateLoaded
         % Pre-assign LIDAR_DATA_SET_TO_USE based on the user's settings. We
         % will verify this value later.
         simConfigs.LIDAR_DATA_SET_TO_USE = LIDAR_DATA_SET_TO_USE;
