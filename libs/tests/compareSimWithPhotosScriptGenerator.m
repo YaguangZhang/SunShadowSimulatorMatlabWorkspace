@@ -2,6 +2,9 @@
 %compareSimWithPhotos for a few times, with the presets to run configured
 %for different Matlab instances.
 %
+% To run the generated script, one could use the bash command:
+%   matlab -r "parpool(2); dirToTests/compareSimWithPhotos#.m"
+%
 % Yaguang Zhang, Purdue, 03/19/2020
 
 cd(fileparts(mfilename('fullpath')));

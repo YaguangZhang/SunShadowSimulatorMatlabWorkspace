@@ -134,7 +134,7 @@ for idxScenario = 1:numOfScenarios
         curDirToSavePreviewFig = fullfile(curDirToTargetLocCsvPath, ...
             [curDirToTargetLocCsvName, '_PreviewMap.jpg']);
         
-        if ~exist(curDirToSavePreviewFig, 'file')
+        if ispc && ~exist(curDirToSavePreviewFig, 'file')
             hFigPreview = figure; hold on;
             hBound = plot(polyshape(boundOfIntLons, boundOfIntLats), ...
                 'FaceColor', 'y', 'FaceAlpha', 0.1);
@@ -1131,161 +1131,165 @@ for idxPreset = 1:length(presetsInfo.simLabels)
     diary off;
     
     %% Create a Comparison Figure with the Original Photo
-    curDirToJpg = presetsInfo.dirToJpgs{idxPreset};
-    [curDirToCompFigFolderPath, curCompFigName, ~] ...
-        = fileparts(curDirToJpg);
-    curPathToSaveCompFig = fullfile(curDirToCompFigFolderPath, ...
-        [curCompFigName, '_Comp']);
-    
-    curBoundOfIntUtmXYs = presetsInfo.boundOfIntUtmXYs{idxPreset};
-    [curBoundOfIntLats, curBoundOfIntLons] ...
-        = simConfigs.utm2deg_speZone( ...
-        curBoundOfIntUtmXYs(:, 1), curBoundOfIntUtmXYs(:, 2));
-    curCameraLatLon = presetsInfo.cameraLatLonHs(idxPreset, 1:2);
-    curTargetLatLon = presetsInfo.targetLatLons(idxPreset, :);
-    curSimLabel = presetsInfo.simLabels{idxPreset};
-    curDatetimeLocal = presetsInfo.datetimesLocal{idxPreset};
-    
-    [curCameraX, curCameraY] = simConfigs.deg2utm_speZone( ...
-        curCameraLatLon(1), curCameraLatLon(2));
-    [curTargetX, curTargetY] = simConfigs.deg2utm_speZone( ...
-        curTargetLatLon(1), curTargetLatLon(2));
-    
-    estiLidarZFct = scatteredInterpolant(simConfigs.gridXYPts(:,1), ...
-        simConfigs.gridXYPts(:,2), simState.gridLidarZs);
-    curCameraZ = estiLidarZFct(curCameraX, curCameraY);
-    curTargetZ = estiLidarZFct(curTargetX, curTargetY);
-    
-    curCameraHInM = presetsInfo.cameraLatLonHs(idxPreset, 3);
-    curCamCenteredLidarXYZs = [simConfigs.gridXYPts(:,1) - curCameraX, ...
-        simConfigs.gridXYPts(:,2) - curCameraY, ...
-        simState.gridLidarZs - curCameraZ - curCameraHInM];
-    
-    % Note that this vector should originate from the center of the plot
-    % box and point toward the camera.
-    curCamViewVectXYZ = -[curTargetX-curCameraX, curTargetY-curCameraY, ...
-        curTargetZ-curCameraZ-curCameraHInM];
-    curCamViewEle = 10;
-    curCamViewAng = 5;
-    
-    % Use a bigger canvas.
-    hFigComp = figure('units','pixel','outerposition',[0 0 1920 1080]);
-    % Raw image.
-    subplot(2, 2, 1);
-    [rawJpgData, ~] = jpgRead(curDirToJpg);
-    imshow(rawJpgData);
-    % 3D view of the LiDAR data colored by sun power values.
-    subplot(2, 2, 2); hold on;
-    [~, hCurAxes, hCurCb] = plot3k(curCamCenteredLidarXYZs, ...
-        'ColorData', simState.uniformSunPower, ...
-        'Labels', {['Estimated Camera Location (Green Square) ', ...
-        'is Centered at (0,0,0)'], ...
-        'x (m)', 'y (m)', 'z (m)', 'Normalized Sun Power'});
-    [caz,cel] = view(curCamViewVectXYZ);
-    view(caz, curCamViewEle);
-    axis equal;
-    plot3(0, 0, 0, 'gs');
-    set(hCurAxes, 'Projection', 'perspective');
-    set(hCurCb, 'Location', 'southoutside');
-    camva(curCamViewAng);
-    % A map for the location of interest.
-    subplot(2, 2, [3,4]);
-    hold on;
-    hBound = plot(polyshape(curBoundOfIntLons, curBoundOfIntLats), ...
-        'FaceColor', 'y', 'FaceAlpha', 0.1);
-    %     hSunPower = plot3k([simConfigs.gridLatLonPts(:,2), ...
-    %         simConfigs.gridLatLonPts(:,1), ...
-    %           simState.gridLidarZs], ...
-    %         'ColorData', simState.uniformSunPower);
-    plot([curCameraLatLon(2), curTargetLatLon(2)], ...
-        [curCameraLatLon(1), curTargetLatLon(1)], '--w');
-    hCam = plot(curCameraLatLon(2), curCameraLatLon(1), 'sg');
-    hTar = plot(curTargetLatLon(2), curTargetLatLon(1), '*r');
-    plot_google_map('MapType', 'hybrid');
-    xlabel('Longitude'); ylabel('Latitude');
-    xticks([]); yticks([]); view(2);
-    legend([hCam, hTar, hBound], 'Camera', 'Target', ...
-        'Simulation Area');
-    title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
-        'Interpreter', 'none');
-    
-    saveas(hFigComp, [curPathToSaveCompFig, '.jpg']);
-    saveas(hFigComp, [curPathToSaveCompFig, '.fig']);
-    
-    % Mimic the camera perspective.
-    curPathToSave3DFig = fullfile(curDirToCompFigFolderPath, ...
-        [curCompFigName, '_SimResults3D']);
-    
-    % For projecting 3D plot to a 2D camera view.
-    %
-    %   Reference:
-    %       https://stackoverflow.com/questions/41371083/perspective-control-in-matlab-3d-figures
-    curCamDistOffsetInM = 0.5*presetsInfo.sideLenForAreaOfIntInM;
-    curCamEleInDegree = 15;
-    
-    curCamVertOffsetInM = tand(curCamEleInDegree)*curCamDistOffsetInM;
-    curVCamToTar = [curTargetX-curCameraX, curTargetY-curCameraY];
-    curUCamToTar = curVCamToTar./norm(curVCamToTar);
-    curCamPosXYZ = [-curUCamToTar.*curCamDistOffsetInM, ...
-        curCamVertOffsetInM];
-    curCamTarXYZ = -curCamPosXYZ;
-    curCamViewAng = 50;
-    
-    hFig3D = figure('units','pixel','outerposition',[0 0 1920 1080]);
-    hold on;
-    [~, hCurAxes, hCurCb] = plot3k(curCamCenteredLidarXYZs, ...
-        'ColorData', simState.uniformSunPower, ...
-        'Labels', {['Estimated Camera Location (Green Square) ', ...
-        'is Centered at (0,0,0)'], ...
-        'x (m)', 'y (m)', 'z (m)', 'Normalized Sun Power'});
-    set(hCurCb, 'Location', 'southoutside');
-    plot3(0, 0, 0, 'gs');
-    plot3([curCamCenteredLidarXYZs(:,1)';...
-        curCamCenteredLidarXYZs(:,1)'], ...
-        [curCamCenteredLidarXYZs(:,2)';...
-        curCamCenteredLidarXYZs(:,2)'], ...
-        [curCamCenteredLidarXYZs(:,3)'.*0;...
-        curCamCenteredLidarXYZs(:,3)'], ...
-        '-', 'LineWidth', 0.5, 'Color', [0,0,0,0.5]);
-    axis equal;
-    set(hCurAxes, 'Projection', 'perspective');
-    camva(curCamViewAng);
-    campos(curCamPosXYZ);
-    camtarget(curCamTarXYZ);
-    title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
-        'Interpreter', 'none');
-    
-    saveas(hFig3D, [curPathToSave3DFig, '.jpg']);
-    saveas(hFig3D, [curPathToSave3DFig, '.fig']);
-    
-    %% Simulation results on map.
-    curPathToSaveMapFig = fullfile(curDirToCompFigFolderPath, ...
-        [curCompFigName, '_SimResultsOnMap']);
-    
-    hFigMap = figure('units','pixel','outerposition',[0 0 1920 1080]);
-    hold on;
-    hBound = plot(polyshape(curBoundOfIntLons, curBoundOfIntLats), ...
-        'FaceColor', 'y', 'FaceAlpha', 0.1);
-    hSunPower = plot3k([simConfigs.gridLatLonPts(:,2), ...
-        simConfigs.gridLatLonPts(:,1), ...
-        simState.gridLidarZs], ...
-        'ColorData', simState.uniformSunPower, ...
-        'Marker', {'.', 5.5}, 'ColorBar', false);
-    plot_google_map('MapType', 'hybrid'); axis('manual');
-    plot([curCameraLatLon(2), curTargetLatLon(2)], ...
-        [curCameraLatLon(1), curTargetLatLon(1)], '--w');
-    hCam = plot(curCameraLatLon(2), curCameraLatLon(1), 'sg');
-    hTar = plot(curTargetLatLon(2), curTargetLatLon(1), '*r');
-    
-    xlabel('Longitude'); ylabel('Latitude');
-    xticks([]); yticks([]); view(2);
-    legend([hCam, hTar, hBound], 'Camera', 'Target', ...
-        'Simulation Area');
-    title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
-        'Interpreter', 'none');
-    
-    saveas(hFigComp, [curPathToSaveCompFig, '.jpg']);
-    saveas(hFigComp, [curPathToSaveCompFig, '.fig']);
+    if ispc
+        curDirToJpg = presetsInfo.dirToJpgs{idxPreset};
+        [curDirToCompFigFolderPath, curCompFigName, ~] ...
+            = fileparts(curDirToJpg);
+        curPathToSaveCompFig = fullfile(curDirToCompFigFolderPath, ...
+            [curCompFigName, '_Comp']);
+        
+        curBoundOfIntUtmXYs = presetsInfo.boundOfIntUtmXYs{idxPreset};
+        [curBoundOfIntLats, curBoundOfIntLons] ...
+            = simConfigs.utm2deg_speZone( ...
+            curBoundOfIntUtmXYs(:, 1), curBoundOfIntUtmXYs(:, 2));
+        curCameraLatLon = presetsInfo.cameraLatLonHs(idxPreset, 1:2);
+        curTargetLatLon = presetsInfo.targetLatLons(idxPreset, :);
+        curSimLabel = presetsInfo.simLabels{idxPreset};
+        curDatetimeLocal = presetsInfo.datetimesLocal{idxPreset};
+        
+        [curCameraX, curCameraY] = simConfigs.deg2utm_speZone( ...
+            curCameraLatLon(1), curCameraLatLon(2));
+        [curTargetX, curTargetY] = simConfigs.deg2utm_speZone( ...
+            curTargetLatLon(1), curTargetLatLon(2));
+        
+        estiLidarZFct = scatteredInterpolant(simConfigs.gridXYPts(:,1), ...
+            simConfigs.gridXYPts(:,2), simState.gridLidarZs);
+        curCameraZ = estiLidarZFct(curCameraX, curCameraY);
+        curTargetZ = estiLidarZFct(curTargetX, curTargetY);
+        
+        curCameraHInM = presetsInfo.cameraLatLonHs(idxPreset, 3);
+        curCamCenteredLidarXYZs = ...
+            [simConfigs.gridXYPts(:,1) - curCameraX, ...
+            simConfigs.gridXYPts(:,2) - curCameraY, ...
+            simState.gridLidarZs - curCameraZ - curCameraHInM];
+        
+        % Note that this vector should originate from the center of the
+        % plot box and point toward the camera.
+        curCamViewVectXYZ = -[curTargetX-curCameraX, ...
+            curTargetY-curCameraY, ...
+            curTargetZ-curCameraZ-curCameraHInM];
+        curCamViewEle = 10;
+        curCamViewAng = 5;
+        
+        % Use a bigger canvas.
+        hFigComp = figure('units','pixel','outerposition',[0 0 1920 1080]);
+        % Raw image.
+        subplot(2, 2, 1);
+        [rawJpgData, ~] = jpgRead(curDirToJpg);
+        imshow(rawJpgData);
+        % 3D view of the LiDAR data colored by sun power values.
+        subplot(2, 2, 2); hold on;
+        [~, hCurAxes, hCurCb] = plot3k(curCamCenteredLidarXYZs, ...
+            'ColorData', simState.uniformSunPower, ...
+            'Labels', {['Estimated Camera Location (Green Square) ', ...
+            'is Centered at (0,0,0)'], ...
+            'x (m)', 'y (m)', 'z (m)', 'Normalized Sun Power'});
+        [caz,cel] = view(curCamViewVectXYZ);
+        view(caz, curCamViewEle);
+        axis equal;
+        plot3(0, 0, 0, 'gs');
+        set(hCurAxes, 'Projection', 'perspective');
+        set(hCurCb, 'Location', 'southoutside');
+        camva(curCamViewAng);
+        % A map for the location of interest.
+        subplot(2, 2, [3,4]);
+        hold on;
+        hBound = plot(polyshape(curBoundOfIntLons, curBoundOfIntLats), ...
+            'FaceColor', 'y', 'FaceAlpha', 0.1);
+        %     hSunPower = plot3k([simConfigs.gridLatLonPts(:,2), ...
+        %         simConfigs.gridLatLonPts(:,1), ...
+        %           simState.gridLidarZs], ...
+        %         'ColorData', simState.uniformSunPower);
+        plot([curCameraLatLon(2), curTargetLatLon(2)], ...
+            [curCameraLatLon(1), curTargetLatLon(1)], '--w');
+        hCam = plot(curCameraLatLon(2), curCameraLatLon(1), 'sg');
+        hTar = plot(curTargetLatLon(2), curTargetLatLon(1), '*r');
+        plot_google_map('MapType', 'hybrid');
+        xlabel('Longitude'); ylabel('Latitude');
+        xticks([]); yticks([]); view(2);
+        legend([hCam, hTar, hBound], 'Camera', 'Target', ...
+            'Simulation Area');
+        title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
+            'Interpreter', 'none');
+        
+        saveas(hFigComp, [curPathToSaveCompFig, '.jpg']);
+        saveas(hFigComp, [curPathToSaveCompFig, '.fig']);
+        
+        % Mimic the camera perspective.
+        curPathToSave3DFig = fullfile(curDirToCompFigFolderPath, ...
+            [curCompFigName, '_SimResults3D']);
+        
+        % For projecting 3D plot to a 2D camera view.
+        %
+        %   Reference:
+        %       https://stackoverflow.com/questions/41371083/perspective-control-in-matlab-3d-figures
+        curCamDistOffsetInM = 0.5*presetsInfo.sideLenForAreaOfIntInM;
+        curCamEleInDegree = 15;
+        
+        curCamVertOffsetInM = tand(curCamEleInDegree)*curCamDistOffsetInM;
+        curVCamToTar = [curTargetX-curCameraX, curTargetY-curCameraY];
+        curUCamToTar = curVCamToTar./norm(curVCamToTar);
+        curCamPosXYZ = [-curUCamToTar.*curCamDistOffsetInM, ...
+            curCamVertOffsetInM];
+        curCamTarXYZ = -curCamPosXYZ;
+        curCamViewAng = 50;
+        
+        hFig3D = figure('units','pixel','outerposition',[0 0 1920 1080]);
+        hold on;
+        [~, hCurAxes, hCurCb] = plot3k(curCamCenteredLidarXYZs, ...
+            'ColorData', simState.uniformSunPower, ...
+            'Labels', {['Estimated Camera Location (Green Square) ', ...
+            'is Centered at (0,0,0)'], ...
+            'x (m)', 'y (m)', 'z (m)', 'Normalized Sun Power'});
+        set(hCurCb, 'Location', 'southoutside');
+        plot3(0, 0, 0, 'gs');
+        plot3([curCamCenteredLidarXYZs(:,1)';...
+            curCamCenteredLidarXYZs(:,1)'], ...
+            [curCamCenteredLidarXYZs(:,2)';...
+            curCamCenteredLidarXYZs(:,2)'], ...
+            [curCamCenteredLidarXYZs(:,3)'.*0;...
+            curCamCenteredLidarXYZs(:,3)'], ...
+            '-', 'LineWidth', 0.5, 'Color', [0,0,0,0.5]);
+        axis equal;
+        set(hCurAxes, 'Projection', 'perspective');
+        camva(curCamViewAng);
+        campos(curCamPosXYZ);
+        camtarget(curCamTarXYZ);
+        title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
+            'Interpreter', 'none');
+        
+        saveas(hFig3D, [curPathToSave3DFig, '.jpg']);
+        saveas(hFig3D, [curPathToSave3DFig, '.fig']);
+        
+        % Simulation results on map.
+        curPathToSaveMapFig = fullfile(curDirToCompFigFolderPath, ...
+            [curCompFigName, '_SimResultsOnMap']);
+        
+        hFigMap = figure('units','pixel','outerposition',[0 0 1920 1080]);
+        hold on;
+        hBound = plot(polyshape(curBoundOfIntLons, curBoundOfIntLats), ...
+            'FaceColor', 'y', 'FaceAlpha', 0.1);
+        hSunPower = plot3k([simConfigs.gridLatLonPts(:,2), ...
+            simConfigs.gridLatLonPts(:,1), ...
+            simState.gridLidarZs], ...
+            'ColorData', simState.uniformSunPower, ...
+            'Marker', {'.', 5.5}, 'ColorBar', false);
+        plot_google_map('MapType', 'hybrid'); axis('manual');
+        plot([curCameraLatLon(2), curTargetLatLon(2)], ...
+            [curCameraLatLon(1), curTargetLatLon(1)], '--w');
+        hCam = plot(curCameraLatLon(2), curCameraLatLon(1), 'sg');
+        hTar = plot(curTargetLatLon(2), curTargetLatLon(1), '*r');
+        
+        xlabel('Longitude'); ylabel('Latitude');
+        xticks([]); yticks([]); view(2);
+        legend([hCam, hTar, hBound], 'Camera', 'Target', ...
+            'Simulation Area');
+        title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
+            'Interpreter', 'none');
+        
+        saveas(hFigComp, [curPathToSaveCompFig, '.jpg']);
+        saveas(hFigComp, [curPathToSaveCompFig, '.fig']);
+    end
 end
 
 % EOF
