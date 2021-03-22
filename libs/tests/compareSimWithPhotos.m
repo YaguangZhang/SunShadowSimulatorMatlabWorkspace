@@ -607,16 +607,18 @@ for idxPreset = 1:length(presetsInfo.simLabels)
     
     %% Simulation Overview Plot
     
-    % Always generate the figures when the PRESET is not RoadSimManager.
-    % Otherwise, only generate the figures once.
-    pathToSaveGridOnMapOverview = fullfile(folderToSaveResults, ...
-        'gridOnMapOverview');
-    if strcmp(PRESET, 'RoadSimManager')
-        if ~exist(pathToSaveGridOnMapOverview, 'file')
+    if ispc
+        % Always generate the figures when the PRESET is not
+        % RoadSimManager. Otherwise, only generate the figures once.
+        pathToSaveGridOnMapOverview = fullfile(folderToSaveResults, ...
+            'gridOnMapOverview');
+        if strcmp(PRESET, 'RoadSimManager')
+            if ~exist(pathToSaveGridOnMapOverview, 'file')
+                overviewGridOnMap;
+            end
+        else
             overviewGridOnMap;
         end
-    else
-        overviewGridOnMap;
     end
     
     %% Simulation: Sunrise and Sunset Times
@@ -968,16 +970,18 @@ for idxPreset = 1:length(presetsInfo.simLabels)
     
     %% Visualization: 3D LiDAR Plots for Debugging
     
-    % Always generate the figures when the PRESET is not RoadSimManager.
-    % Otherwise, only generate the figures once.
-    debugResultsDir = fullfile(folderToSaveResults, ...
-        'debugLidarDataForAreaOfInterest');
-    if strcmp(PRESET, 'RoadSimManager')
-        if ~exist(debugResultsDir, 'dir')
+    if ispc
+        % Always generate the figures when the PRESET is not
+        % RoadSimManager. Otherwise, only generate the figures once.
+        debugResultsDir = fullfile(folderToSaveResults, ...
+            'debugLidarDataForAreaOfInterest');
+        if strcmp(PRESET, 'RoadSimManager')
+            if ~exist(debugResultsDir, 'dir')
+                debugLidarDataForAreaOfInterest;
+            end
+        else
             debugLidarDataForAreaOfInterest;
         end
-    else
-        debugLidarDataForAreaOfInterest;
     end
     
     %% Visualization: Video Clip for Shadow Location
