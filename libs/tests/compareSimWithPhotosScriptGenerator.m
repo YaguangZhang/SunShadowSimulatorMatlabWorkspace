@@ -10,7 +10,7 @@
 cd(fileparts(mfilename('fullpath')));
 
 numOfPresets = 37;
-presetsPerWorker = 3;
+presetsPerWorker = 1;
 
 line_to_change = 167;
 
