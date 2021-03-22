@@ -166,16 +166,17 @@ presetsInfo.simLabels = vertcat(simLabelsSceCell{:});
 
 for idxPreset = 1:length(presetsInfo.simLabels)
     %% Initialization for Each Preset
-    PRESET = presetsInfo.simLabels{idxPreset};
     
     % Avoid clearing (1) required variables by the simulation manager, and
     % (2) big static variables.
-    clearvars -except presetsInfo PRESET ...
+    clearvars -except presetsInfo idxPreset ...
         flagInitiatedByRoadSimManager dirToSaveManDiary idxSim ...
         indotRoads ROAD_PROJ ...
         indotMileMarkers MILE_MARKER_PROJ ...
         INDOT_MILE_MARKERS_ROADNAME_LABELS;
     clc; close all; dbstop if error;
+    
+    PRESET = presetsInfo.simLabels{idxPreset};
     
     % Locate the Matlab workspace and save the current filename.
     cd(fileparts(mfilename('fullpath')));
@@ -218,23 +219,17 @@ for idxPreset = 1:length(presetsInfo.simLabels)
     %   - The UTM (x, y) polygon boundary vertices representing the area of
     %   interest for generating the coverage maps; note that it is possible
     %   to use the region covered by the available LiDAR data set as the
-    %   corresponding area of interest.
-    idxPreset = find(strcmp(presetsInfo.simLabels, PRESET));
-    if ~isempty(idxPreset) && length(idxPreset)==1
-        %   - Load the area of interest.
-        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
-            = presetsInfo.boundOfIntUtmXYs{idxPreset};
-        %   - The time range of interest to inspect. The datetime for this
-        %   is specified in terms of the local time without a time zone.
-        %   The time zone will be derived from simConfigs.UTM_ZONE. The
-        %   times to inspect are essentially constructed via something
-        %   like:
-        %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
-        [simConfigs.LOCAL_TIME_START, simConfigs.LOCAL_TIME_END] ...
-            = deal(presetsInfo.datetimesLocal{idxPreset});
-    else
-        error(['Unsupported preset "', PRESET, '"!'])
-    end
+    %   corresponding area of interest. Load the pre-determined area of
+    %   interest.
+    simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+        = presetsInfo.boundOfIntUtmXYs{idxPreset};
+    %   - The time range of interest to inspect. The datetime for this is
+    %   specified in terms of the local time without a time zone. The time
+    %   zone will be derived from simConfigs.UTM_ZONE. The times to inspect
+    %   are essentially constructed via something like:
+    %       inspectTimeStartInS:inspectTimeIntervalInS:inspectTimeEndInS
+    [simConfigs.LOCAL_TIME_START, simConfigs.LOCAL_TIME_END] ...
+        = deal(presetsInfo.datetimesLocal{idxPreset});
     
     %   - We will use this spacial resolution to construct the inspection
     %   location grid for the area of interest.
