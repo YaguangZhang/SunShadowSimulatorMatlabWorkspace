@@ -737,7 +737,7 @@ for idxPreset = 1:length(presetsInfo.simLabels)
                 curLocSunAzis = simState.sunAzis(idxLoc, :);
                 curLocSunZens = simState.sunZens(idxLoc, :);
                 curLocSuniformSunPower = simState.uniformSunPower(idxLoc, :);
-                parfor curIdxDatetime = indicesTimesToInspect(2:end)
+                for curIdxDatetime = indicesTimesToInspect(2:end)
                     % And find the solar position if nessary, that is (1)
                     % the sun aimuth has not been evaluated for this
                     % location and time, and (2) if this location is in the
@@ -862,7 +862,7 @@ for idxPreset = 1:length(presetsInfo.simLabels)
             curLocUniformSunPowersSeg = ...
                 curLocUniformSunPowers(indicesDatetimeToProcess);
             
-            parfor idxIdxDatetime = 1:length(indicesDatetimeToProcess)
+            for idxIdxDatetime = 1:length(indicesDatetimeToProcess)
                 idxDatetime = indicesDatetimeToProcess(idxIdxDatetime);
                 % For debugging.
                 try
