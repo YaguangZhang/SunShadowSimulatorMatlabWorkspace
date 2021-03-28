@@ -53,7 +53,7 @@ else
     % not be set and we will run the simulation for a scenario defined
     % below in this script. Please refer to the Simulation Configurations
     % section for the supported presets.
-    PRESET = 'PurdueVossModel';
+    PRESET = 'SR53_Seg_Test_Loc_3_20161007';
 end
 
 %% Script Parameters
@@ -150,6 +150,15 @@ switch PRESET
         %   the user setting section, we will here cache the command for
         %   generating this field and execute it in the configuration
         %   section.
+        simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
+            = strcat( ...
+            "constructUtmRoadSegPolygon({'Broadway','S53'},", ...
+            "{[39.791532,-87.236069],[39.792541,-87.235928]},", ...
+            "{[39.792553,-87.236054],[39.791528,-87.235930]});");
+        simConfigs.GRID_RESOLUTION_IN_M = 3;
+    case 'SR53_Seg_Test_Loc_3_20161007'
+        %   - A test road segment on SR 53. For comparing the results with
+        %   Google Maps satellite image.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = strcat( ...
             "constructUtmRoadSegPolygon({'Broadway','S53'},", ...
@@ -348,6 +357,10 @@ elseif any(strcmp(decToMarPresetsCell, PRESET))
     
     % We only need to generate the demo video for one day.
     FLAG_GEN_VIDEO_FOR_ONE_DAY = true;
+elseif strcmp(PRESET, 'SR53_Seg_Test_Loc_3_20161007')
+    simConfigs.LOCAL_TIME_START = datetime('07-Oct-2016 06:00:00');
+    simConfigs.LOCAL_TIME_END = datetime('07-Oct-2016 18:00:00');
+    simConfigs.TIME_INTERVAL_IN_M = 15; % In minutes.
 else
     simConfigs.LOCAL_TIME_START = datetime('20-Dec-2020 06:00:00');
     simConfigs.LOCAL_TIME_END = datetime('20-Dec-2020 18:00:00');
