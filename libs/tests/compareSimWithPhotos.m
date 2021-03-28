@@ -1268,7 +1268,7 @@ for idxPreset = 1:length(presetsInfo.simLabels)
             'Interpreter', 'none');
         
         saveas(hFig3D, [curPathToSave3DFig, '.jpg']);
-        saveas(hFig3D, [curPathToSave3DFig, '.fig']);
+        % saveas(hFig3D, [curPathToSave3DFig, '.fig']);
         
         % Simulation results on map.
         curPathToSaveMapFig = fullfile(curDirToCompFigFolderPath, ...
@@ -1296,8 +1296,8 @@ for idxPreset = 1:length(presetsInfo.simLabels)
         title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
             'Interpreter', 'none');
         
-        saveas(hFigComp, [curPathToSaveCompFig, '.jpg']);
-        saveas(hFigComp, [curPathToSaveCompFig, '.fig']);
+        saveas(hFigMap, [curPathToSaveCompFig, '.jpg']);
+        saveas(hFigMap, [curPathToSaveCompFig, '.fig']);
     end
 end
 
