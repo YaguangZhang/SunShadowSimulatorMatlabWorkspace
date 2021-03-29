@@ -53,7 +53,7 @@ else
     % not be set and we will run the simulation for a scenario defined
     % below in this script. Please refer to the Simulation Configurations
     % section for the supported presets.
-    PRESET = 'SR53_Seg_Test_Loc_3_20161007';
+    PRESET = 'SR35_Seg_Test_Loc_3_20161007';
 end
 
 %% Script Parameters
@@ -145,23 +145,23 @@ switch PRESET
             = constructUtmRectanglePolyMat(...
             [40.421134, -86.921930; 40.422334, -86.923715]);
         simConfigs.GRID_RESOLUTION_IN_M = 3;
-    case 'SR53_Seg_Test_Loc_3'
-        %   - A test road segment on SR 53. To save the execution time in
+    case 'SR35_Seg_Test_Loc_3'
+        %   - A test road segment on SR 35. To save the execution time in
         %   the user setting section, we will here cache the command for
         %   generating this field and execute it in the configuration
         %   section.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = strcat( ...
-            "constructUtmRoadSegPolygon({'Broadway','S53'},", ...
+            "constructUtmRoadSegPolygon('U35',", ...
             "{[41.142108, -86.602631],[41.142109, -86.602472]},", ...
             "{[41.143351, -86.602610],[41.143345, -86.602473]});");
         simConfigs.GRID_RESOLUTION_IN_M = 3;
-    case 'SR53_Seg_Test_Loc_3_20161007'
-        %   - A test road segment on SR 53. For comparing the results with
+    case 'SR35_Seg_Test_Loc_3_20161007'
+        %   - A test road segment on SR 35. For comparing the results with
         %   Google Maps satellite image.
         simConfigs.UTM_X_Y_BOUNDARY_OF_INTEREST ...
             = strcat( ...
-            "constructUtmRoadSegPolygon({'Broadway','S53'},", ...
+            "constructUtmRoadSegPolygon('U35',", ...
             "{[41.142108, -86.602631],[41.142109, -86.602472]},", ...
             "{[41.143351, -86.602610],[41.143345, -86.602473]});");
         simConfigs.GRID_RESOLUTION_IN_M = 3;
@@ -354,7 +354,7 @@ elseif any(strcmp(decToMarPresetsCell, PRESET))
     
     % We only need to generate the demo video for one day.
     FLAG_GEN_VIDEO_FOR_ONE_DAY = true;
-elseif strcmp(PRESET, 'SR53_Seg_Test_Loc_3_20161007')
+elseif strcmp(PRESET, 'SR35_Seg_Test_Loc_3_20161007')
     simConfigs.LOCAL_TIME_START = datetime('07-Oct-2016 06:00:00');
     simConfigs.LOCAL_TIME_END = datetime('07-Oct-2016 18:00:00');
     simConfigs.TIME_INTERVAL_IN_M = 15; % In minutes.
