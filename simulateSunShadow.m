@@ -306,7 +306,7 @@ simConfigs.MAX_ALLOWED_LIDAR_PROFILE_RESOLUTION_IN_M = 1.5;
 % simConfigs.RX_HEIGHT_TO_INSPECT_IN_M = 0;
 
 %   - For each location of interest, only a limited distance of the LiDAR
-%   data will be inspected. Increase this parameter will increase the
+%   data will be inspected. Increasing this parameter will increase the
 %   computation needed for the simulation, but if this parameter is too
 %   low, the accuracy of the simulation may decrease, too, especially for
 %   the case when the sun is at a low angle (then a low obstacle far away
@@ -320,7 +320,7 @@ simConfigs.MAX_ALLOWED_LIDAR_PROFILE_RESOLUTION_IN_M = 1.5;
 %     the sunrise and before the sunset, with a typical three-story
 %     building (~10 m high), we would need a radius to inspect of r meters
 %     such that:
-%         arctand(10/r)*2/180 *12*60 = 15*2
+%         atand(10/r)*2/180 *12*60 = 15*2
 %     We can get r here is around 152 meters:
 %         r = 10/tand(15*2/60/12*180/2) = 152.5705
 simConfigs.RADIUS_TO_INSPECT_IN_M = 150;
