@@ -1144,6 +1144,8 @@ for idxPreset = 1:length(presetsInfo.simLabels)
         curDirToJpg = presetsInfo.dirToJpgs{idxPreset};
         [curDirToCompFigFolderPath, curCompFigName, ~] ...
             = fileparts(curDirToJpg);
+        curPathToSave3DCompFig = fullfile(curDirToCompFigFolderPath, ...
+            [curCompFigName, '_3D']);
         curPathToSaveCompFig = fullfile(curDirToCompFigFolderPath, ...
             [curCompFigName, '_Comp']);
         
@@ -1181,7 +1183,7 @@ for idxPreset = 1:length(presetsInfo.simLabels)
         curCamViewAng = 5;
         
         % Use a bigger canvas.
-        hFigComp = figure('units','pixel','outerposition',[0 0 1920 1080]);
+        hFig3DComp = figure('units','pixel','outerposition',[0 0 1920 1080]);
         % Raw image.
         subplot(2, 2, 1);
         [rawJpgData, ~] = jpgRead(curDirToJpg);
@@ -1221,8 +1223,8 @@ for idxPreset = 1:length(presetsInfo.simLabels)
         title(['Sim ', curSimLabel, ': ', datestr(curDatetimeLocal)], ...
             'Interpreter', 'none');
         
-        saveas(hFigComp, [curPathToSaveCompFig, '.jpg']);
-        saveas(hFigComp, [curPathToSaveCompFig, '.fig']);
+        saveas(hFig3DComp, [curPathToSave3DCompFig, '.jpg']);
+        saveas(hFig3DComp, [curPathToSave3DCompFig, '.fig']);
         
         % Mimic the camera perspective.
         curPathToSave3DFig = fullfile(curDirToCompFigFolderPath, ...
