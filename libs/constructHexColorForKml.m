@@ -1,6 +1,7 @@
 function [colorHex] = constructHexColorForKml(color, alpha)
 %CONSTRUCTHEXCOLORFORKML Construct a hex color variable for plotting in a
-%.kml file.
+%.kml file. All input values, including elements of [r, g, b] color and
+%alpha, are 0~255 integers.
 %
 % Yaguang Zhang, Purdue, 02/10/2021
 
