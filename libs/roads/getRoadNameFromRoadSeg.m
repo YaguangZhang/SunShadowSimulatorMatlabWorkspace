@@ -27,7 +27,7 @@ regPats = {'(SR|State Rd|State Road)( |-|)(\d+)', ...
 roadName = roadSeg.FULL_STREE;
 
 for idxType = 1:length(roadTypes)
-    ts = regexp(roadName, regPats{idxType}, 'tokens');
+    ts = regexpi(roadName, regPats{idxType}, 'tokens');
     if ~isempty(ts)
         roadNumStr = ts{1}{3};
         roadName = [roadTypes{idxType}, roadNumStr];
