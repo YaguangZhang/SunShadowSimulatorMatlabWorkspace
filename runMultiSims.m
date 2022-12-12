@@ -9,7 +9,7 @@
 clear; clc; close all; dbstop if error;
 
 % Locate the Matlab workspace and save the current filename.
-cd(fileparts(mfilename('fullpath'))); addpath('lib');
+cd(fileparts(mfilename('fullpath'))); addpath('libs');
 curFileName = mfilename;
 
 prepareSimulationEnv;
